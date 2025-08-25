@@ -31,6 +31,7 @@ var commands = map[string]func(splittedCommand []string, c net.Conn, master bool
 	"lrange":   lrange,
 	"lpush":    lpush,
 	"llen":     llen,
+	"lpop":     lpop,
 }
 
 var extraCommands = map[string]func(splittedCommand []string, c net.Conn, master bool, bCount int) (bool, []byte){
@@ -360,11 +361,7 @@ func lrange(cmds []string, c net.Conn, m bool, count int) (bool, []byte) {
 		if start > end || start >= len(val) {
 			return !m, []byte(parseRESPStringsToArray([]string{}))
 		}
-		var res []string
-		for i := start; i <= end; i++ {
-			res = append(res, parseStringToRESP(val[i]))
-		}
-		return !m, []byte(parseRESPStringsToArray(res))
+		return !m, []byte(parseRESPStringsToArray(val[start:end]))
 	}
 	return !m, []byte(parseRESPStringsToArray([]string{}))
 }
@@ -387,6 +384,17 @@ func llen(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		return !m, []byte(parseStringToRESPInt(strconv.Itoa(len(val))))
 	}
 	return !m, []byte(parseStringToRESPInt("0"))
+}
+
+func lpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
+	if val, found := lists[cmds[4]]; found {
+		if len(val) > 0 {
+			popped := val[0]
+			lists[cmds[4]] = val[1:]
+			return !m, []byte(parseStringToRESP(popped))
+		}
+	}
+	return !m, []byte(NULLBULK)
 }
 
 func checkStreams(nStreams int, cmds []string, j int) (bool, []string) {
