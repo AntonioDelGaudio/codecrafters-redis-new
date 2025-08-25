@@ -28,6 +28,7 @@ var commands = map[string]func(splittedCommand []string, c net.Conn, master bool
 	"xrange":   xrange,
 	"xread":    xread,
 	"rpush":    rpush,
+	"lrange":   lrange,
 }
 
 var extraCommands = map[string]func(splittedCommand []string, c net.Conn, master bool, bCount int) (bool, []byte){
@@ -245,6 +246,7 @@ func typeC(cmds []string, c net.Conn, m bool, count int) (bool, []byte) {
 	}
 }
 
+// xCommands implementation
 func xadd(cmds []string, c net.Conn, m bool, count int) (bool, []byte) {
 	var lastId string
 	if v, ok := entries[cmds[4]]; ok {
@@ -320,6 +322,7 @@ func xread(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	return !m, []byte(NULLBULK)
 }
 
+// lists implementation
 func rpush(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	var newVals []string
 	for i := 6; i < len(cmds); i += 2 {
@@ -331,6 +334,25 @@ func rpush(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		lists[cmds[4]] = newVals
 	}
 	return !m, []byte(parseStringToRESPInt(strconv.Itoa(len(lists[cmds[4]]))))
+}
+
+func lrange(cmds []string, c net.Conn, m bool, count int) (bool, []byte) {
+	start, _ := strconv.Atoi(cmds[6])
+	end, _ := strconv.Atoi(cmds[8])
+	if val, found := lists[cmds[4]]; found {
+		if end >= len(val) {
+			end = len(val) - 1
+		}
+		if start > end || start >= len(val) {
+			return !m, []byte(parseRESPStringsToArray([]string{}))
+		}
+		var res []string
+		for i := start; i <= end; i++ {
+			res = append(res, parseStringToRESP(val[i]))
+		}
+		return !m, []byte(parseRESPStringsToArray(res))
+	}
+	return !m, []byte(parseRESPStringsToArray([]string{}))
 }
 
 func checkStreams(nStreams int, cmds []string, j int) (bool, []string) {
