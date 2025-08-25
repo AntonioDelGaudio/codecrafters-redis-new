@@ -429,7 +429,9 @@ func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 			if len(val) > 0 {
 				popped := val[0]
 				lists[cmds[4]] = val[1:]
-				return !m, []byte(parseStringToRESP(popped))
+				fmt.Println("BLPOP woke up and found value")
+				res := []string{parseStringToRESP(cmds[4]), parseStringToRESP(popped)}
+				return !m, []byte(parseRESPStringsToArray(res))
 			}
 		}
 		fmt.Println("BLPOP timeout")
