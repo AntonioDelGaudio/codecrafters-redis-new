@@ -340,6 +340,18 @@ func lrange(cmds []string, c net.Conn, m bool, count int) (bool, []byte) {
 	start, _ := strconv.Atoi(cmds[6])
 	end, _ := strconv.Atoi(cmds[8])
 	if val, found := lists[cmds[4]]; found {
+		if start < 0 {
+			start = len(val) + start
+		}
+		if end < 0 {
+			end = len(val) + end
+		}
+		if start < 0 {
+			start = 0
+		}
+		if end < 0 {
+			end = 0
+		}
 		if end >= len(val) {
 			end = len(val) - 1
 		}
