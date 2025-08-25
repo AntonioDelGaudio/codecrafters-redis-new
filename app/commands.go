@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -322,13 +321,15 @@ func xread(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 }
 
 func rpush(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
-	fmt.Println(cmds)
-	if val, found := lists[cmds[4]]; found {
-		val = append(val, cmds[6])
-		lists[cmds[4]] = val
-		return !m, []byte(parseStringToRESPInt(strconv.Itoa(len(val))))
+	var newVals []string
+	for i := 6; i < len(cmds); i += 2 {
+		newVals = append(newVals, cmds[i])
 	}
-	lists[cmds[4]] = []string{cmds[6]}
+	if val, found := lists[cmds[4]]; found {
+		lists[cmds[4]] = append(val, newVals...)
+	} else {
+		lists[cmds[4]] = newVals
+	}
 	return !m, []byte(parseStringToRESPInt("1"))
 }
 
