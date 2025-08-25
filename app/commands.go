@@ -371,7 +371,7 @@ func lrange(cmds []string, c net.Conn, m bool, count int) (bool, []byte) {
 func lpush(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	var newVals []string
 	for i := 6; i < len(cmds); i += 2 {
-		newVals = append(newVals, cmds[i])
+		newVals = append([]string{cmds[i]}, newVals...)
 	}
 	if val, found := lists[cmds[4]]; found {
 		lists[cmds[4]] = append(newVals, val...)
