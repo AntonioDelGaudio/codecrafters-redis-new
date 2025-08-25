@@ -30,6 +30,7 @@ var commands = map[string]func(splittedCommand []string, c net.Conn, master bool
 	"rpush":    rpush,
 	"lrange":   lrange,
 	"lpush":    lpush,
+	"llen":     llen,
 }
 
 var extraCommands = map[string]func(splittedCommand []string, c net.Conn, master bool, bCount int) (bool, []byte){
@@ -379,6 +380,13 @@ func lpush(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		lists[cmds[4]] = newVals
 	}
 	return !m, []byte(parseStringToRESPInt(strconv.Itoa(len(lists[cmds[4]]))))
+}
+
+func llen(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
+	if val, found := lists[cmds[4]]; found {
+		return !m, []byte(parseStringToRESPInt(strconv.Itoa(len(val))))
+	}
+	return !m, []byte(parseStringToRESPInt("0"))
 }
 
 func checkStreams(nStreams int, cmds []string, j int) (bool, []string) {
