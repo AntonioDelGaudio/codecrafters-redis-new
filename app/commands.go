@@ -423,7 +423,7 @@ func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	sleepT, _ := strconv.Atoi(cmds[6])
 	listsLock[cmds[4]] = append(listsLock[cmds[4]], c)
 	if sleepT > 0 {
-		time.Sleep(time.Duration(sleepT) * time.Millisecond)
+		time.Sleep(time.Duration(sleepT) * time.Second)
 		if val, found := lists[cmds[4]]; found {
 			if len(val) > 0 {
 				popped := val[0]
