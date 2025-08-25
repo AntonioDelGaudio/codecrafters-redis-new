@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -27,6 +28,7 @@ var commands = map[string]func(splittedCommand []string, c net.Conn, master bool
 	"xadd":     xadd,
 	"xrange":   xrange,
 	"xread":    xread,
+	"rpush":    rpush,
 }
 
 var extraCommands = map[string]func(splittedCommand []string, c net.Conn, master bool, bCount int) (bool, []byte){
@@ -317,6 +319,17 @@ func xread(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		return !m, []byte(parseRESPStringsToArray(externalSlice))
 	}
 	return !m, []byte(NULLBULK)
+}
+
+func rpush(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
+	fmt.Println(cmds)
+	if val, found := lists[cmds[4]]; found {
+		val = append(val, cmds[6])
+		lists[cmds[4]] = val
+		return !m, []byte(parseStringToRESPInt(strconv.Itoa(len(val))))
+	}
+	lists[cmds[4]] = []string{cmds[6]}
+	return !m, []byte(parseStringToRESPInt("1"))
 }
 
 func checkStreams(nStreams int, cmds []string, j int) (bool, []string) {
