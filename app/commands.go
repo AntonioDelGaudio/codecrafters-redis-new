@@ -32,6 +32,7 @@ var commands = map[string]func(splittedCommand []string, c net.Conn, master bool
 	"lpush":    lpush,
 	"llen":     llen,
 	"lpop":     lpop,
+	"blop":     blop,
 }
 
 var extraCommands = map[string]func(splittedCommand []string, c net.Conn, master bool, bCount int) (bool, []byte){
@@ -406,6 +407,32 @@ func lpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 			popped := val[0]
 			lists[cmds[4]] = val[1:]
 			return !m, []byte(parseStringToRESP(popped))
+		}
+	}
+	return !m, []byte(NULLBULK)
+}
+
+func blop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
+	if val, found := lists[cmds[4]]; found {
+		if len(val) > 0 {
+			popped := val[0]
+			lists[cmds[4]] = val[1:]
+			return !m, []byte(parseStringToRESP(popped))
+		}
+	}
+	sleepT, _ := strconv.Atoi(cmds[6])
+	if sleepT > 0 {
+		time.Sleep(time.Duration(sleepT) * time.Millisecond)
+	} else {
+		for {
+			if val, found := lists[cmds[4]]; found {
+				if len(val) > 0 {
+					popped := val[0]
+					lists[cmds[4]] = val[1:]
+					return !m, []byte(parseStringToRESP(popped))
+				}
+			}
+			time.Sleep(time.Duration(1000) * time.Millisecond)
 		}
 	}
 	return !m, []byte(NULLBULK)
