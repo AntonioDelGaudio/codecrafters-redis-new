@@ -29,6 +29,7 @@ var commands = map[string]func(splittedCommand []string, c net.Conn, master bool
 	"xread":    xread,
 	"rpush":    rpush,
 	"lrange":   lrange,
+	"lpush":    lpush,
 }
 
 var extraCommands = map[string]func(splittedCommand []string, c net.Conn, master bool, bCount int) (bool, []byte){
@@ -365,6 +366,19 @@ func lrange(cmds []string, c net.Conn, m bool, count int) (bool, []byte) {
 		return !m, []byte(parseRESPStringsToArray(res))
 	}
 	return !m, []byte(parseRESPStringsToArray([]string{}))
+}
+
+func lpush(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
+	var newVals []string
+	for i := 6; i < len(cmds); i += 2 {
+		newVals = append(newVals, cmds[i])
+	}
+	if val, found := lists[cmds[4]]; found {
+		lists[cmds[4]] = append(newVals, val...)
+	} else {
+		lists[cmds[4]] = newVals
+	}
+	return !m, []byte(parseStringToRESPInt(strconv.Itoa(len(lists[cmds[4]]))))
 }
 
 func checkStreams(nStreams int, cmds []string, j int) (bool, []string) {
