@@ -330,7 +330,7 @@ func rpush(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	} else {
 		lists[cmds[4]] = newVals
 	}
-	return !m, []byte(parseStringToRESPInt("1"))
+	return !m, []byte(parseStringToRESPInt(strconv.Itoa(len(lists[cmds[4]]))))
 }
 
 func checkStreams(nStreams int, cmds []string, j int) (bool, []string) {
