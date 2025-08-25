@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -422,7 +421,6 @@ func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		}
 	}
 	sleepT, _ := strconv.Atoi(cmds[6])
-	fmt.Println(sleepT)
 	listsLock[cmds[4]] = append(listsLock[cmds[4]], c)
 	if sleepT > 0 {
 		time.Sleep(time.Duration(sleepT) * time.Millisecond)
@@ -433,7 +431,8 @@ func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 					popped := val[0]
 					lists[cmds[4]] = val[1:]
 					listsLock[cmds[4]] = listsLock[cmds[4]][1:]
-					return !m, []byte(parseStringToRESP(popped))
+					res := []string{parseStringToRESP(cmds[4]), parseStringToRESP(popped)}
+					return !m, []byte(parseRESPStringsToArray(res))
 				}
 			}
 			time.Sleep(time.Duration(10) * time.Millisecond)
