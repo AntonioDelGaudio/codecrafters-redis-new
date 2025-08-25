@@ -394,12 +394,13 @@ func llen(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 func lpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	if val, found := lists[cmds[4]]; found {
 		if len(val) > 0 {
-			fmt.Println(len(cmds))
 			if len(cmds) > 5 {
 				nPop, _ := strconv.Atoi(cmds[6])
 				var res []string
+				fmt.Println(val)
 				for i := 0; i < nPop-1; i++ {
 					popped := lists[cmds[4]][0]
+					fmt.Println(popped)
 					res = append(res, parseStringToRESP(popped))
 					lists[cmds[4]] = lists[cmds[4]][1:]
 				}
