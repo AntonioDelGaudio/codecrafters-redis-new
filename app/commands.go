@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -431,6 +432,7 @@ func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 				return !m, []byte(parseStringToRESP(popped))
 			}
 		}
+		fmt.Println("BLPOP timeout")
 		return !m, []byte(NULLBULK)
 	} else {
 		for {
