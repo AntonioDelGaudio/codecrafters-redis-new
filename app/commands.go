@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -329,7 +328,6 @@ func xread(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 // lists implementation
 func rpush(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	var newVals []string
-	fmt.Println(cmds)
 	for i := 6; i < len(cmds); i += 2 {
 		newVals = append(newVals, cmds[i])
 	}
@@ -399,9 +397,9 @@ func lpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 				nPop, _ := strconv.Atoi(cmds[6])
 				var res []string
 				for i := 0; i < nPop-1 && len(val) > 0; i++ {
-					popped := val[0]
+					popped := lists[cmds[4]][0]
 					res = append(res, parseStringToRESP(popped))
-					lists[cmds[4]] = val[1:]
+					lists[cmds[4]] = lists[cmds[4]][1:]
 				}
 				return !m, []byte(parseRESPStringsToArray(res))
 			}

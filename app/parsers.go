@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/base64"
-	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -68,7 +67,6 @@ func parseFromRESP(reader *bufio.Reader) (res []string, count int) {
 			i++
 		}
 	}
-	fmt.Println("RESP PARSED:", res)
 	return res, bCount
 }
 
