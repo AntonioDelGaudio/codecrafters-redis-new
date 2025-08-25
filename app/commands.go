@@ -361,7 +361,11 @@ func lrange(cmds []string, c net.Conn, m bool, count int) (bool, []byte) {
 		if start > end || start >= len(val) {
 			return !m, []byte(parseRESPStringsToArray([]string{}))
 		}
-		return !m, []byte(parseRESPStringsToArray(val[start:end]))
+		var res []string
+		for i := start; i <= end; i++ {
+			res = append(res, parseStringToRESP(val[i]))
+		}
+		return !m, []byte(parseRESPStringsToArray(res))
 	}
 	return !m, []byte(parseRESPStringsToArray([]string{}))
 }
