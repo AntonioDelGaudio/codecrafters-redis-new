@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -246,6 +245,8 @@ func typeC(cmds []string, c net.Conn, m bool, count int) (bool, []byte) {
 		return !m, []byte("+string" + CRLF)
 	} else if _, ok := entries[cmds[4]]; ok {
 		return !m, []byte("+stream" + CRLF)
+	} else if _, ok := lists[cmds[4]]; ok {
+		return !m, []byte("+list" + CRLF)
 	} else {
 		return !m, []byte("+none" + CRLF)
 	}
@@ -424,7 +425,6 @@ func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	sleepT, _ := strconv.ParseFloat(cmds[6], 64)
 	listsLock[cmds[4]] = append(listsLock[cmds[4]], c)
 	if sleepT > 0 {
-		fmt.Println(int(sleepT * 1000))
 		time.Sleep(time.Duration(int(sleepT*1000)) * time.Millisecond)
 		if val, found := lists[cmds[4]]; found {
 			if len(val) > 0 {
