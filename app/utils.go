@@ -29,7 +29,7 @@ func searchList(key string, c net.Conn, m bool) (bool, []byte, bool) {
 
 func blpopSleep(sleepT int, key string, c net.Conn, m bool, c1 chan<- bool, c2 chan<- []byte) {
 	if sleepT > 0 {
-		time.Sleep(time.Duration(sleepT) * time.Millisecond)
+		time.Sleep(time.Duration(1) * time.Second)
 		m, msg, _ := searchList(key, c, m)
 		c1 <- m
 		c2 <- msg
