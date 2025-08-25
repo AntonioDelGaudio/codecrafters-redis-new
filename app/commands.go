@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -425,6 +426,7 @@ func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	sleepT, _ := strconv.ParseFloat(cmds[6], 64)
 	listsLock[cmds[4]] = append(listsLock[cmds[4]], c)
 	if sleepT > 0 {
+		fmt.Println(int(sleepT * 1000))
 		time.Sleep(time.Duration(int(sleepT*1000)) * time.Millisecond)
 		if val, found := lists[cmds[4]]; found {
 			if len(val) > 0 {
