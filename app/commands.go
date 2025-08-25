@@ -425,13 +425,15 @@ func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	}
 	sleepT, _ := strconv.ParseFloat(cmds[6], 64)
 	listsLock[cmds[4]] = append(listsLock[cmds[4]], c)
+	fmt.Println(sleepT)
 	if sleepT > 0 {
 		fmt.Println(int(sleepT * 1000))
 		time.Sleep(time.Duration(int(sleepT*1000)) * time.Millisecond)
-		if val, found := lists[cmds[4]]; found {
+		if val, found := lists[cmds[4]]; found && listsLock[cmds[4]][0] == c {
 			if len(val) > 0 {
 				popped := val[0]
 				lists[cmds[4]] = val[1:]
+				listsLock[cmds[4]] = listsLock[cmds[4]][1:]
 				res := []string{parseStringToRESP(cmds[4]), parseStringToRESP(popped)}
 				return !m, []byte(parseRESPStringsToArray(res))
 			}
