@@ -432,7 +432,7 @@ func blop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 					return !m, []byte(parseStringToRESP(popped))
 				}
 			}
-			time.Sleep(time.Duration(1000) * time.Millisecond)
+			time.Sleep(time.Duration(10) * time.Millisecond)
 		}
 	}
 	return !m, []byte(NULLBULK)
