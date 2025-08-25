@@ -421,12 +421,11 @@ func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 			return !m, []byte(parseStringToRESP(popped))
 		}
 	}
-	fmt.Println(cmds)
 	sleepT, _ := strconv.ParseFloat(cmds[6], 64)
 	listsLock[cmds[4]] = append(listsLock[cmds[4]], c)
 	if sleepT > 0 {
 		fmt.Println("Going to sleep for", sleepT, "seconds")
-		time.Sleep(time.Duration(sleepT) * time.Second)
+		time.Sleep(time.Duration(sleepT) * 1000 * time.Millisecond)
 		fmt.Println("Slept for", sleepT, "seconds")
 		if val, found := lists[cmds[4]]; found {
 			if len(val) > 0 {
