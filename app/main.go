@@ -33,6 +33,8 @@ var dbfilename = flag.String("dbfilename", "", "The name of the file with the sn
 
 var entries = make(map[string][]Entry)
 var memory = make(map[string]Record)
+var channels = make(map[string]map[net.Conn]bool)
+var subscriptions = make(map[net.Conn]map[string]bool)
 var sent = false
 
 var alignedRepl = SafeCounter{

@@ -12,28 +12,29 @@ var queue = map[net.Conn][][]string{}
 var inTrans = map[net.Conn]bool{}
 
 var commands = map[string]func(splittedCommand []string, c net.Conn, master bool, bCount int) (bool, []byte){
-	"get":      get,
-	"echo":     echo,
-	"set":      set,
-	"ping":     ping,
-	"info":     info,
-	"replconf": replconf,
-	"psync":    psync,
-	"wait":     wait,
-	"config":   config,
-	"keys":     keys,
-	"incr":     incr,
-	"multi":    multi,
-	"type":     typeC,
-	"xadd":     xadd,
-	"xrange":   xrange,
-	"xread":    xread,
-	"rpush":    rpush,
-	"lrange":   lrange,
-	"lpush":    lpush,
-	"llen":     llen,
-	"lpop":     lpop,
-	"blpop":    blpop,
+	"get":       get,
+	"echo":      echo,
+	"set":       set,
+	"ping":      ping,
+	"info":      info,
+	"replconf":  replconf,
+	"psync":     psync,
+	"wait":      wait,
+	"config":    config,
+	"keys":      keys,
+	"incr":      incr,
+	"multi":     multi,
+	"type":      typeC,
+	"xadd":      xadd,
+	"xrange":    xrange,
+	"xread":     xread,
+	"rpush":     rpush,
+	"lrange":    lrange,
+	"lpush":     lpush,
+	"llen":      llen,
+	"lpop":      lpop,
+	"blpop":     blpop,
+	"subscribe": subscribe,
 }
 
 var extraCommands = map[string]func(splittedCommand []string, c net.Conn, master bool, bCount int) (bool, []byte){
@@ -448,6 +449,15 @@ func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		fmt.Println("Timeout reached, returning nil")
 		return !m, []byte(NULLBULK)
 	}
+}
+
+// Subscribe implementation
+func subscribe(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
+	channels[cmds[4]] = make(map[net.Conn]bool)
+	subscriptions[c] = make(map[string]bool)
+	return !m, []byte(parseRESPStringsToArray([]string{parseStringToRESP("subscribe"),
+		parseStringToRESP(cmds[4]),
+		parseStringToRESPInt(strconv.Itoa(len(subscriptions[c])))}))
 }
 
 func checkStreams(nStreams int, cmds []string, j int) (bool, []string) {
