@@ -5,7 +5,6 @@ import (
 	"net"
 	"strconv"
 	"strings"
-	"sync/atomic"
 	"time"
 )
 
@@ -331,90 +330,128 @@ func xread(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 }
 
 // lists implementation
-func rpush(cmds []string, c net.Conn, master bool, bCount int) (bool, []byte) {
-	if len(cmds) < 3 {
-		return !master, []byte("-ERR wrong number of arguments for 'rpush' command\r\n")
-	}
-	key := cmds[1]
-	values := cmds[2:]
+func rpush(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
+	lc := make(chan int)
 	endSize := 0
-	for _, val := range values {
-		retChan := make(chan int)
-		writeChan <- WriteReq{key: key, left: false, val: val, ret: retChan}
-		endSize = <-retChan
+	for i := 6; i < len(cmds); i += 2 {
+		wR := WriteReq{
+			key:  cmds[4],
+			left: false,
+			val:  cmds[i],
+		}
+		writeChan <- wR
+		endSize = <-lc
 	}
-	return !master, []byte(parseStringToRESPInt(strconv.Itoa(endSize)))
+	return !m, []byte(parseStringToRESPInt(strconv.Itoa(endSize)))
 }
 
-func lrange(cmds []string, c net.Conn, master bool, bCount int) (bool, []byte) {
-	if len(cmds) != 4 {
-		return !master, []byte("-ERR wrong number of arguments for 'lrange' command\r\n")
+func lrange(cmds []string, c net.Conn, m bool, count int) (bool, []byte) {
+	start, _ := strconv.Atoi(cmds[6])
+	end, _ := strconv.Atoi(cmds[8])
+	if val, found := lists[cmds[4]]; found {
+		if start < 0 {
+			start = len(val) + start
+		}
+		if end < 0 {
+			end = len(val) + end
+		}
+		if start < 0 {
+			start = 0
+		}
+		if end < 0 {
+			end = 0
+		}
+		if end >= len(val) {
+			end = len(val) - 1
+		}
+		if start > end || start >= len(val) {
+			return !m, []byte(parseRESPStringsToArray([]string{}))
+		}
+		var res []string
+		for i := start; i <= end; i++ {
+			res = append(res, parseStringToRESP(val[i]))
+		}
+		return !m, []byte(parseRESPStringsToArray(res))
 	}
-	key := cmds[1]
-	start, err1 := strconv.Atoi(cmds[2])
-	end, err2 := strconv.Atoi(cmds[3])
-	if err1 != nil || err2 != nil {
-		return !master, []byte("-ERR value is not an integer or out of range\r\n")
-	}
-	retChan := make(chan []string)
-	rangeChan <- RangeReq{key: key, start: start, end: end, ret: retChan}
-	res := <-retChan
-	return !master, []byte(parseRESPStringsToArray(res))
-}
-func lpush(cmds []string, c net.Conn, master bool, bCount int) (bool, []byte) {
-	if len(cmds) < 3 {
-		return !master, []byte("-ERR wrong number of arguments for 'lpush' command\r\n")
-	}
-	key := cmds[1]
-	values := cmds[2:]
-	endSize := 0
-	for _, val := range values {
-		retChan := make(chan int)
-		writeChan <- WriteReq{key: key, left: true, val: val, ret: retChan}
-		endSize = <-retChan
-	}
-	return !master, []byte(parseStringToRESPInt(strconv.Itoa(endSize)))
+	return !m, []byte(parseRESPStringsToArray([]string{}))
 }
 
-func llen(cmds []string, c net.Conn, master bool, bCount int) (bool, []byte) {
-	if len(cmds) != 2 {
-		return !master, []byte("-ERR wrong number of arguments for 'llen' command\r\n")
+func lpush(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
+	lc := make(chan int)
+	endSize := 0
+	for i := 6; i < len(cmds); i += 2 {
+		wR := WriteReq{
+			key:  cmds[4],
+			left: true,
+			val:  cmds[i],
+			ret:  lc,
+		}
+		writeChan <- wR
+		endSize = <-lc
 	}
-	key := cmds[1]
-	retChan := make(chan int)
-	lenChan <- LenReq{key: key, ret: retChan}
-	length := <-retChan
-	return !master, []byte(parseStringToRESPInt(strconv.Itoa(length)))
+	return !m, []byte(parseStringToRESPInt(strconv.Itoa(endSize)))
 }
-func lpop(cmds []string, c net.Conn, master bool, bCount int) (bool, []byte) {
-	if len(cmds) < 2 {
-		return !master, []byte("-ERR wrong number of arguments for 'lpop' command\r\n")
+
+func llen(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
+	if val, found := lists[cmds[4]]; found {
+		return !m, []byte(parseStringToRESPInt(strconv.Itoa(len(val))))
 	}
-	key := cmds[1]
-	retChan := make(chan string)
-	readChan <- ReadReq{block: false, key: key, ret: retChan}
-	popped := <-retChan
-	return !master, []byte(popped)
+	return !m, []byte(parseStringToRESPInt("0"))
 }
-func blpop(cmds []string, c net.Conn, master bool, bCount int) (bool, []byte) {
-	if len(cmds) < 3 {
-		return false, []byte("-ERR wrong number of arguments for 'blpop' command\r\n")
+
+func lpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
+	ch := make(chan string)
+	rR := ReadReq{
+		block: false,
+		key:   cmds[4],
+		c:     ch,
 	}
-	key := cmds[1]
-	timeout, err := strconv.ParseFloat(cmds[2], 64)
-	if err != nil {
-		return false, []byte("-ERR timeout is not a valid float\r\n")
+	if len(cmds) > 5 {
+		nPop, _ := strconv.Atoi(cmds[6])
+		var res []string
+		for i := 0; i < nPop; i++ {
+			readChan <- rR
+			popped := <-ch
+			res = append(res, popped)
+		}
+		return !m, []byte(parseRESPStringsToArray(res))
 	}
-	reqID := atomic.AddUint64(&nextSubscriberID, 1)
-	readChan <- ReadReq{block: true, key: key, conn: c, id: reqID}
-	if timeout > 0 {
-		time.AfterFunc(time.Duration(timeout*1000)*time.Millisecond, func() {
-			fmt.Printf("Timeout for request %d on key %s\n", reqID, key)
-			cancelChan <- CancelReq{key: key, id: reqID}
-		})
+	readChan <- rR
+	popped := <-ch
+	return !m, []byte(popped)
+}
+
+func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
+	ch := make(chan string)
+	rR := ReadReq{
+		block: true,
+		key:   cmds[4],
+		c:     ch,
 	}
-	// Signal the main loop to do nothing; the broker will handle the response.
-	return false, nil
+	readChan <- rR
+	sleepT, _ := strconv.ParseFloat(cmds[6], 64)
+	sleepC := make(chan bool)
+	go func() {
+		if sleepT > 0 {
+			time.Sleep(time.Duration(int(sleepT*1000)) * time.Millisecond)
+			sleepC <- true
+		}
+	}()
+	for {
+		select {
+		case popped := <-rR.c:
+			fmt.Println("Found value", popped)
+			res := parseRESPStringsToArray([]string{parseStringToRESP(rR.key), popped})
+			fmt.Println(res)
+			return !m, []byte(res)
+		case <-sleepC:
+			fmt.Println("Timed out")
+			return !m, []byte(NULLBULK)
+		default:
+			fmt.Println("Waiting")
+			time.Sleep(time.Duration(5) * time.Millisecond)
+		}
+	}
 }
 
 func checkStreams(nStreams int, cmds []string, j int) (bool, []string) {
