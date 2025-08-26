@@ -394,42 +394,49 @@ func llen(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 }
 
 func lpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
-	if val, found := lists[cmds[4]]; found {
-		if len(val) > 0 {
-			if len(cmds) > 5 {
-				nPop, _ := strconv.Atoi(cmds[6])
-				var res []string
-				for i := 0; i < nPop; i++ {
-					popped := lists[cmds[4]][0]
-					res = append(res, parseStringToRESP(popped))
-					lists[cmds[4]] = lists[cmds[4]][1:]
-				}
-				return !m, []byte(parseRESPStringsToArray(res))
-			}
-			popped := val[0]
-			lists[cmds[4]] = val[1:]
-			return !m, []byte(parseStringToRESP(popped))
-		}
+	ch := make(chan string)
+	rR := ReadReq{
+		block: false,
+		key:   cmds[4],
+		c:     ch,
 	}
-	return !m, []byte(NULLBULK)
+	if len(cmds) > 5 {
+		nPop, _ := strconv.Atoi(cmds[6])
+		var res []string
+		for i := 0; i < nPop; i++ {
+			readChan <- rR
+			popped := <-ch
+			res = append(res, popped)
+		}
+		return !m, []byte(parseRESPStringsToArray(res))
+	}
+	readChan <- rR
+	popped := <-ch
+	return !m, []byte(popped)
 }
 
 func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
-	if val, found := lists[cmds[4]]; found {
-		if len(val) > 0 {
-			popped := val[0]
-			lists[cmds[4]] = val[1:]
-			return !m, []byte(parseStringToRESP(popped))
-		}
+	ch := make(chan string)
+	rR := ReadReq{
+		block: true,
+		key:   cmds[4],
+		c:     ch,
 	}
+	readChan <- rR
 	sleepT, _ := strconv.ParseFloat(cmds[6], 64)
-	listsLock[cmds[4]] = append(listsLock[cmds[4]], c)
-	c1 := make(chan bool, 1)
-	c2 := make(chan []byte)
-	go blpopSleep(int(sleepT*1000), cmds[4], c, m, c1, c2)
-	m = <-c1
-	msg := <-c2
-	return m, msg
+	sleepC := make(chan bool)
+	go func() {
+		if sleepT > 0 {
+			time.Sleep(time.Duration(int(sleepT*1000)) * time.Millisecond)
+			sleepC <- true
+		}
+	}()
+	select {
+	case popped := <-rR.c:
+		return !m, []byte(popped)
+	case <-sleepC:
+		return !m, []byte(NULLBULK)
+	}
 }
 
 func checkStreams(nStreams int, cmds []string, j int) (bool, []string) {

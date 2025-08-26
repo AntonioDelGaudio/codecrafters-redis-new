@@ -33,8 +33,6 @@ var dbfilename = flag.String("dbfilename", "", "The name of the file with the sn
 
 var entries = make(map[string][]Entry)
 var memory = make(map[string]Record)
-var lists = make(map[string][]string)
-var listsLock = make(map[string][]net.Conn)
 var sent = false
 
 var alignedRepl = SafeCounter{
@@ -137,6 +135,8 @@ func main() {
 	configs["dir"] = *dir
 	configs["dbfilename"] = *dbfilename
 	restore()
+
+	go listBroker(writeChan, readChan)
 	l, err := net.Listen("tcp", "0.0.0.0:"+*port)
 	if err != nil {
 		fmt.Println("Failed to bind to port " + *port)

@@ -9,6 +9,56 @@ type SafeCounter struct {
 	v  int
 }
 
+var lists = make(map[string][]string)
+var blopSubscribers = make(map[string][]chan<- string)
+
+type ReadReq struct {
+	block bool
+	key   string
+	c     chan string
+}
+
+type WriteReq struct {
+	key string
+	val string
+}
+
+var writeChan = make(chan WriteReq)
+var readChan = make(chan ReadReq)
+
+func listBroker(w <-chan WriteReq, r <-chan ReadReq) {
+	for {
+		select {
+		case write := <-w:
+			lists[write.key] = append(lists[write.key], write.val)
+			if len(blopSubscribers[write.key]) > 0 {
+				sub := blopSubscribers[write.key][0]
+				blopSubscribers[write.key] = blopSubscribers[write.key][1:]
+				sub <- write.val
+			}
+		case read := <-r:
+			if read.block {
+				if len(lists[read.key]) > 0 {
+					popped := lists[read.key][0]
+					lists[read.key] = lists[read.key][1:]
+					read.c <- popped
+				} else {
+					blopSubscribers[read.key] = append(blopSubscribers[read.key], read.c)
+				}
+			} else {
+				if len(lists[read.key]) > 0 {
+					popped := lists[read.key][0]
+					lists[read.key] = lists[read.key][1:]
+					read.c <- parseStringToRESP(popped)
+				} else {
+					read.c <- NULLBULK
+				}
+			}
+
+		}
+	}
+}
+
 // Inc increments the counter for the given key.
 func (c *SafeCounter) Inc() {
 	c.mu.Lock()
