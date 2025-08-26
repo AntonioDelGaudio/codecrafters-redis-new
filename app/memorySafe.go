@@ -59,6 +59,9 @@ func listBroker(w <-chan WriteReq, r <-chan ReadReq) {
 			fmt.Println("Waiting to see if there are subscribers")
 			time.Sleep(time.Duration(10) * time.Millisecond)
 			fmt.Println("Waited")
+			fmt.Println("Waiting to see if there are subscribers")
+			time.Sleep(time.Duration(10) * time.Millisecond)
+			fmt.Println("Waited")
 			if len(blopSubscribers[write.key]) > 0 {
 				fmt.Println("blop subscriber found")
 				sub := blopSubscribers[write.key][0]
