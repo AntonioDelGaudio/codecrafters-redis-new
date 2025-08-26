@@ -517,11 +517,13 @@ func unsubscribe(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 }
 
 func zadd(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
+	res := 0
 	if _, ok := sortedSets[cmds[4]]; !ok {
 		sortedSets[cmds[4]] = map[string]float64{}
+		res = 1
 	}
 	sortedSets[cmds[4]][cmds[6]], _ = strconv.ParseFloat(cmds[8], 64)
-	return !m, []byte(parseStringToRESPInt(strconv.Itoa(len(sortedSets[cmds[4]]))))
+	return !m, []byte(parseStringToRESPInt(strconv.Itoa(res)))
 }
 
 func checkStreams(nStreams int, cmds []string, j int) (bool, []string) {
