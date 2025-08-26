@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/base64"
-	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -57,7 +56,6 @@ func parseFromRESP(reader *bufio.Reader) (res []string, count int) {
 		bCount += len(start)
 		start = stripCRLF(start)
 	}
-	fmt.Println("Start:", string(start))
 	if string(start[0]) == "*" {
 		res = append(res, string(start))
 		count, _ := strconv.Atoi(string(start[1:]))
