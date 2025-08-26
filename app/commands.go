@@ -442,6 +442,7 @@ func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 			fmt.Println("Timed out")
 			return !m, []byte(NULLBULK)
 		default:
+			fmt.Println("Waiting...")
 		}
 	}
 }
