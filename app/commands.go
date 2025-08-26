@@ -521,11 +521,10 @@ func zadd(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	if _, ok := sortedSets[cmds[4]]; !ok {
 		sortedSets[cmds[4]] = map[string]float64{}
 	}
-	if _, ok := sortedSets[cmds[4]][cmds[6]]; !ok {
-		fmt.Println("Not found: " + cmds[6])
+	if _, ok := sortedSets[cmds[4]][cmds[8]]; !ok {
 		res = 1
 	}
-	sortedSets[cmds[4]][cmds[6]], _ = strconv.ParseFloat(cmds[8], 64)
+	sortedSets[cmds[4]][cmds[8]], _ = strconv.ParseFloat(cmds[6], 64)
 	return !m, []byte(parseStringToRESPInt(strconv.Itoa(res)))
 }
 
