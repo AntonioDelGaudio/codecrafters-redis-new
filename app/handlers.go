@@ -32,6 +32,12 @@ func handleArray(cmds []string, c net.Conn, master bool, bCount int) (respond bo
 	if _, ok := extraCommands[command]; ok {
 		return extraCommands[command](cmds, c, master, bCount)
 	}
+	if len(subscriptions[c]) > 0 {
+		if _, ok := pubSubCommands[command]; !ok {
+			return !master, []byte("-ERR can't execute '" + command + "': only (P|S)SUBSCRIBE / (P|S)UNSUBSCRIBE / PING / QUIT / RESET are allowed in this context" + CRLF)
+		}
+		return pubSubCommands[command](cmds, c, master, bCount)
+	}
 	if _, ok := commands[command]; !ok { // if not return error
 		return !master, []byte("-ERR unknown command '" + command + "'" + CRLF)
 	}

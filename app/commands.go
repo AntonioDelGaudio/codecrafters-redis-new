@@ -37,6 +37,14 @@ var commands = map[string]func(splittedCommand []string, c net.Conn, master bool
 	"subscribe": subscribe,
 }
 
+var pubSubCommands = map[string]func(splittedCommand []string, c net.Conn, master bool, bCount int) (bool, []byte){
+	"subscribe":    subscribe,
+	"publish":      nil,
+	"unsubscribe":  nil,
+	"psubscribe":   nil,
+	"punsubscribe": nil,
+}
+
 var extraCommands = map[string]func(splittedCommand []string, c net.Conn, master bool, bCount int) (bool, []byte){
 	"exec":    exec,
 	"discard": discard,
