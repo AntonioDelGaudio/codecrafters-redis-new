@@ -42,7 +42,7 @@ var pubSubCommands = map[string]func(splittedCommand []string, c net.Conn, maste
 	"subscribe":    subscribe,
 	"ping":         sPing,
 	"publish":      publish,
-	"unsubscribe":  nil,
+	"unsubscribe":  unsubscribe,
 	"psubscribe":   nil,
 	"punsubscribe": nil,
 }
@@ -498,6 +498,22 @@ func publish(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	return !m, []byte(parseStringToRESPInt("0"))
 }
 
+func unsubscribe(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
+	if _, ok := subscriptions[c]; !ok {
+		subscriptions[c] = map[string]bool{}
+	}
+	if _, ok := channels[cmds[4]]; ok {
+		if _, ok := channels[cmds[4]][c]; ok {
+			delete(channels[cmds[4]], c)
+		}
+	}
+	if _, ok := subscriptions[c][cmds[4]]; ok {
+		delete(subscriptions[c], cmds[4])
+	}
+	return !m, []byte(parseRESPStringsToArray([]string{parseStringToRESP("unsubscribe"),
+		parseStringToRESP(cmds[4]),
+		parseStringToRESPInt(strconv.Itoa(len(subscriptions[c])))}))
+}
 func checkStreams(nStreams int, cmds []string, j int) (bool, []string) {
 	var found bool
 	var externalSlice []string
