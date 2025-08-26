@@ -56,20 +56,16 @@ func listBroker(w <-chan WriteReq, r <-chan ReadReq) {
 			}
 		case write := <-w:
 			if len(blopSubscribers[write.key]) > 0 {
-				fmt.Println("blop subscriber found")
 				sub := blopSubscribers[write.key][0]
 				blopSubscribers[write.key] = blopSubscribers[write.key][1:]
 				sub <- parseStringToRESP(write.val)
 				write.ret <- len(lists[write.key]) + 1
 			} else {
 				if write.left {
-					fmt.Println("writing left")
 					lists[write.key] = append([]string{write.val}, lists[write.key]...)
 				} else {
-					fmt.Println("writing right: ", write.val, " to key: ", write.key)
 					lists[write.key] = append(lists[write.key], write.val)
 				}
-				fmt.Println("List now: ", lists[write.key])
 				write.ret <- len(lists[write.key])
 			}
 		}
