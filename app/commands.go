@@ -437,21 +437,18 @@ func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 			sleepC <- true
 		}
 	}()
-	for {
-		select {
-		case popped := <-rR.c:
-			fmt.Println("Found value", popped)
-			res := parseRESPStringsToArray([]string{parseStringToRESP(rR.key), popped})
-			fmt.Println(res)
-			return !m, []byte(res)
-		case <-sleepC:
-			fmt.Println("Timed out")
-			return !m, []byte(NULLBULK)
-		default:
-			fmt.Println("Waiting")
-			time.Sleep(time.Duration(5) * time.Millisecond)
-		}
+
+	select {
+	case popped := <-rR.c:
+		fmt.Println("Found value", popped)
+		res := parseRESPStringsToArray([]string{parseStringToRESP(rR.key), popped})
+		fmt.Println(res)
+		return !m, []byte(res)
+	case <-sleepC:
+		fmt.Println("Timed out")
+		return !m, []byte(NULLBULK)
 	}
+
 }
 
 func checkStreams(nStreams int, cmds []string, j int) (bool, []string) {
