@@ -136,7 +136,7 @@ func main() {
 	configs["dbfilename"] = *dbfilename
 	restore()
 
-	go listBroker(writeChan, readChan)
+	go listBroker(writeChan, readChan, cancelChan, lenChan, rangeChan)
 	l, err := net.Listen("tcp", "0.0.0.0:"+*port)
 	if err != nil {
 		fmt.Println("Failed to bind to port " + *port)
