@@ -339,6 +339,7 @@ func rpush(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 			key:  cmds[4],
 			left: false,
 			val:  cmds[i],
+			ret:  lc,
 		}
 		writeChan <- wR
 		endSize = <-lc
