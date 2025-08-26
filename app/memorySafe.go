@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"sync"
+	"time"
 )
 
 type SafeCounter struct {
@@ -55,6 +56,7 @@ func listBroker(w <-chan WriteReq, r <-chan ReadReq) {
 				}
 			}
 		case write := <-w:
+			time.Sleep(time.Duration(10) * time.Millisecond)
 			if len(blopSubscribers[write.key]) > 0 {
 				fmt.Println("blop subscriber found")
 				sub := blopSubscribers[write.key][0]

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -429,7 +428,6 @@ func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		c:     ch,
 	}
 	readChan <- rR
-	fmt.Println("Waiting for element...")
 	sleepT, _ := strconv.ParseFloat(cmds[6], 64)
 
 	var timeoutChan <-chan time.Time
@@ -439,13 +437,8 @@ func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	select {
 	case popped := <-rR.c:
 		res := parseRESPStringsToArray([]string{parseStringToRESP(rR.key), popped})
-		for c := range res {
-			fmt.Print("Elem: ")
-			fmt.Println(res[c])
-		}
 		return !m, []byte(res)
 	case <-timeoutChan:
-		fmt.Println("Timed out")
 		return !m, []byte(NULLBULK)
 	}
 }
