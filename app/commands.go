@@ -422,6 +422,7 @@ func lpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 }
 
 func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
+	fmt.Println("blpop called")
 	ch := make(chan string)
 	rR := ReadReq{
 		block: true,
