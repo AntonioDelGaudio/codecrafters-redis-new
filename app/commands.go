@@ -331,6 +331,7 @@ func xread(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 
 // lists implementation
 func rpush(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
+	fmt.Println("Called RPUSH")
 	var newVals []string
 	for i := 6; i < len(cmds); i += 2 {
 		newVals = append(newVals, cmds[i])
