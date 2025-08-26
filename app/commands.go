@@ -430,14 +430,11 @@ func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	}
 	readChan <- rR
 	sleepT, _ := strconv.ParseFloat(cmds[6], 64)
-	sleepC := make(chan bool)
-	go func() {
-		if sleepT > 0 {
-			time.Sleep(time.Duration(int(sleepT*1000)) * time.Millisecond)
-			sleepC <- true
-		}
-	}()
 
+	var timeoutChan <-chan time.Time
+	if sleepT > 0 {
+		timeoutChan = time.After(time.Duration(int(sleepT*1000)) * time.Millisecond)
+	}
 	select {
 	case popped := <-rR.c:
 		res := parseRESPStringsToArray([]string{parseStringToRESP(rR.key), popped})
@@ -446,7 +443,7 @@ func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 			fmt.Println(c)
 		}
 		return !m, []byte(res)
-	case <-sleepC:
+	case <-timeoutChan:
 		fmt.Println("Timed out")
 		return !m, []byte(NULLBULK)
 	}
