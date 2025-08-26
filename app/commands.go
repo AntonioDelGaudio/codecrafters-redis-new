@@ -453,6 +453,13 @@ func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 
 // Subscribe implementation
 func subscribe(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
+	if _, ok := subscriptions[c]; !ok {
+		subscriptions[c] = map[string]bool{}
+	}
+	subscriptions[c][cmds[4]] = true
+	if _, ok := channels[cmds[4]]; !ok {
+		channels[cmds[4]] = map[net.Conn]bool{}
+	}
 	channels[cmds[4]][c] = true
 	subscriptions[c][cmds[4]] = true
 	return !m, []byte(parseRESPStringsToArray([]string{parseStringToRESP("subscribe"),
