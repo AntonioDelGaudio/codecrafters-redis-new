@@ -428,7 +428,7 @@ func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	sleepC := make(chan bool)
 	go func() {
 		if sleepT > 0 {
-			time.Sleep(time.Duration(int(sleepT*1000)) * time.Millisecond)
+			time.Sleep(time.Duration(int(sleepT*1000)+500) * time.Millisecond)
 			sleepC <- true
 		}
 	}()
