@@ -441,9 +441,9 @@ func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		select {
 		case popped := <-rR.c:
 			fmt.Println("Found value", popped)
-			res := []string{parseStringToRESP(rR.key), popped}
+			res := parseRESPStringsToArray([]string{parseStringToRESP(rR.key), popped})
 			fmt.Println(res)
-			return !m, []byte(parseRESPStringsToArray(res))
+			return !m, []byte(res)
 		case <-sleepC:
 			fmt.Println("Timed out")
 			return !m, []byte(NULLBULK)
