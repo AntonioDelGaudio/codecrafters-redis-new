@@ -22,6 +22,7 @@ type WriteReq struct {
 	key  string
 	left bool
 	val  string
+	ret  chan int
 }
 
 var writeChan = make(chan WriteReq)
@@ -35,12 +36,14 @@ func listBroker(w <-chan WriteReq, r <-chan ReadReq) {
 				sub := blopSubscribers[write.key][0]
 				blopSubscribers[write.key] = blopSubscribers[write.key][1:]
 				sub <- parseStringToRESP(write.val)
+				write.ret <- len(lists[write.key]) + 1
 			} else {
 				if write.left {
 					lists[write.key] = append([]string{write.val}, lists[write.key]...)
 				} else {
 					lists[write.key] = append(lists[write.key], write.val)
 				}
+				write.ret <- len(lists[write.key])
 			}
 		case read := <-r:
 			if read.block {

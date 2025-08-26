@@ -331,6 +331,8 @@ func xread(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 
 // lists implementation
 func rpush(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
+	lc := make(chan int)
+	endSize := 0
 	for i := 6; i < len(cmds); i += 2 {
 		wR := WriteReq{
 			key:  cmds[4],
@@ -338,8 +340,9 @@ func rpush(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 			val:  cmds[i],
 		}
 		writeChan <- wR
+		endSize = <-lc
 	}
-	return !m, []byte(parseStringToRESPInt(strconv.Itoa(len(lists[cmds[4]]))))
+	return !m, []byte(parseStringToRESPInt(strconv.Itoa(endSize)))
 }
 
 func lrange(cmds []string, c net.Conn, m bool, count int) (bool, []byte) {
@@ -374,15 +377,19 @@ func lrange(cmds []string, c net.Conn, m bool, count int) (bool, []byte) {
 }
 
 func lpush(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
+	lc := make(chan int)
+	endSize := 0
 	for i := 6; i < len(cmds); i += 2 {
 		wR := WriteReq{
 			key:  cmds[4],
 			left: true,
 			val:  cmds[i],
+			ret:  lc,
 		}
 		writeChan <- wR
+		endSize = <-lc
 	}
-	return !m, []byte(parseStringToRESPInt(strconv.Itoa(len(lists[cmds[4]]))))
+	return !m, []byte(parseStringToRESPInt(strconv.Itoa(endSize)))
 }
 
 func llen(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
