@@ -429,7 +429,7 @@ func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		c:     ch,
 	}
 	readChan <- rR
-
+	fmt.Println("Waiting for element... diopo")
 	sleepT, _ := strconv.ParseFloat(cmds[6], 64)
 
 	var timeoutChan <-chan time.Time
