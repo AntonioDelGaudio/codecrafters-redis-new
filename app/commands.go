@@ -333,7 +333,7 @@ func xread(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 // lists implementation
 func rpush(cmds []string, c net.Conn, master bool, bCount int) (bool, []byte) {
 	if len(cmds) < 3 {
-		return false, []byte("-ERR wrong number of arguments for 'rpush' command\r\n")
+		return !master, []byte("-ERR wrong number of arguments for 'rpush' command\r\n")
 	}
 	key := cmds[1]
 	values := cmds[2:]
@@ -343,27 +343,27 @@ func rpush(cmds []string, c net.Conn, master bool, bCount int) (bool, []byte) {
 		writeChan <- WriteReq{key: key, left: false, val: val, ret: retChan}
 		endSize = <-retChan
 	}
-	return false, []byte(parseStringToRESPInt(strconv.Itoa(endSize)))
+	return !master, []byte(parseStringToRESPInt(strconv.Itoa(endSize)))
 }
 
 func lrange(cmds []string, c net.Conn, master bool, bCount int) (bool, []byte) {
 	if len(cmds) != 4 {
-		return false, []byte("-ERR wrong number of arguments for 'lrange' command\r\n")
+		return !master, []byte("-ERR wrong number of arguments for 'lrange' command\r\n")
 	}
 	key := cmds[1]
 	start, err1 := strconv.Atoi(cmds[2])
 	end, err2 := strconv.Atoi(cmds[3])
 	if err1 != nil || err2 != nil {
-		return false, []byte("-ERR value is not an integer or out of range\r\n")
+		return !master, []byte("-ERR value is not an integer or out of range\r\n")
 	}
 	retChan := make(chan []string)
 	rangeChan <- RangeReq{key: key, start: start, end: end, ret: retChan}
 	res := <-retChan
-	return false, []byte(parseRESPStringsToArray(res))
+	return !master, []byte(parseRESPStringsToArray(res))
 }
 func lpush(cmds []string, c net.Conn, master bool, bCount int) (bool, []byte) {
 	if len(cmds) < 3 {
-		return false, []byte("-ERR wrong number of arguments for 'lpush' command\r\n")
+		return !master, []byte("-ERR wrong number of arguments for 'lpush' command\r\n")
 	}
 	key := cmds[1]
 	values := cmds[2:]
@@ -373,67 +373,47 @@ func lpush(cmds []string, c net.Conn, master bool, bCount int) (bool, []byte) {
 		writeChan <- WriteReq{key: key, left: true, val: val, ret: retChan}
 		endSize = <-retChan
 	}
-	return false, []byte(parseStringToRESPInt(strconv.Itoa(endSize)))
+	return !master, []byte(parseStringToRESPInt(strconv.Itoa(endSize)))
 }
 
 func llen(cmds []string, c net.Conn, master bool, bCount int) (bool, []byte) {
 	if len(cmds) != 2 {
-		return false, []byte("-ERR wrong number of arguments for 'llen' command\r\n")
+		return !master, []byte("-ERR wrong number of arguments for 'llen' command\r\n")
 	}
 	key := cmds[1]
 	retChan := make(chan int)
 	lenChan <- LenReq{key: key, ret: retChan}
 	length := <-retChan
-	return false, []byte(parseStringToRESPInt(strconv.Itoa(length)))
+	return !master, []byte(parseStringToRESPInt(strconv.Itoa(length)))
 }
 func lpop(cmds []string, c net.Conn, master bool, bCount int) (bool, []byte) {
 	if len(cmds) < 2 {
-		return false, []byte("-ERR wrong number of arguments for 'lpop' command\r\n")
+		return !master, []byte("-ERR wrong number of arguments for 'lpop' command\r\n")
 	}
 	key := cmds[1]
 	retChan := make(chan string)
 	readChan <- ReadReq{block: false, key: key, ret: retChan}
 	popped := <-retChan
-	return false, []byte(popped)
+	return !master, []byte(popped)
 }
-func blpop(cmds []string, c net.Conn) (bool, []byte) {
+func blpop(cmds []string, c net.Conn, master bool, bCount int) (bool, []byte) {
 	if len(cmds) < 3 {
-		c.Write([]byte("-ERR wrong number of arguments for 'blpop' command\r\n"))
-		return false, nil
+		return false, []byte("-ERR wrong number of arguments for 'blpop' command\r\n")
 	}
 	key := cmds[1]
 	timeout, err := strconv.ParseFloat(cmds[2], 64)
 	if err != nil {
-		c.Write([]byte("-ERR timeout is not a valid float\r\n"))
-		return false, nil
+		return false, []byte("-ERR timeout is not a valid float\r\n")
 	}
-
-	// Generate a unique ID for this specific request.
 	reqID := atomic.AddUint64(&nextSubscriberID, 1)
-
-	// Send the blocking read request to the broker.
-	// We pass the connection `c` so the broker knows where to send the response.
-	readChan <- ReadReq{
-		block: true,
-		key:   key,
-		conn:  c,
-		id:    reqID,
-	}
-
-	// If the client specified a timeout, start a timer.
-	// When the timer fires, it will send a cancellation request to the broker.
+	readChan <- ReadReq{block: true, key: key, conn: c, id: reqID}
 	if timeout > 0 {
 		time.AfterFunc(time.Duration(timeout*1000)*time.Millisecond, func() {
 			fmt.Printf("Timeout for request %d on key %s\n", reqID, key)
-			cancelChan <- CancelReq{
-				key: key,
-				id:  reqID,
-			}
+			cancelChan <- CancelReq{key: key, id: reqID}
 		})
 	}
-
-	// The handler's job is done. It does not wait and does not write a response.
-	// The server's main loop can now process the next command from this client.
+	// Signal the main loop to do nothing; the broker will handle the response.
 	return false, nil
 }
 
