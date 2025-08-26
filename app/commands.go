@@ -333,6 +333,7 @@ func xread(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 func rpush(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	lc := make(chan int)
 	endSize := 0
+	fmt.Println("RPUSH called with", cmds)
 	for i := 6; i < len(cmds); i += 2 {
 		wR := WriteReq{
 			key:  cmds[4],
@@ -341,7 +342,9 @@ func rpush(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		}
 		writeChan <- wR
 		endSize = <-lc
+		fmt.Println("End size now", endSize)
 	}
+	fmt.Println("Returning from RPUSH, with size", endSize)
 	return !m, []byte(parseStringToRESPInt(strconv.Itoa(endSize)))
 }
 
@@ -422,7 +425,6 @@ func lpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 }
 
 func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
-	fmt.Println("blpop called")
 	ch := make(chan string)
 	rR := ReadReq{
 		block: true,
