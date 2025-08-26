@@ -429,7 +429,7 @@ func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		c:     ch,
 	}
 	readChan <- rR
-	fmt.Println("Waiting for element... diopo")
+	fmt.Println("Waiting for element...")
 	sleepT, _ := strconv.ParseFloat(cmds[6], 64)
 
 	var timeoutChan <-chan time.Time
@@ -441,7 +441,7 @@ func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		res := parseRESPStringsToArray([]string{parseStringToRESP(rR.key), popped})
 		for c := range res {
 			fmt.Print("Elem: ")
-			fmt.Println(c)
+			fmt.Println(res[c])
 		}
 		return !m, []byte(res)
 	case <-timeoutChan:
