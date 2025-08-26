@@ -36,6 +36,7 @@ var commands = map[string]func(splittedCommand []string, c net.Conn, master bool
 	"blpop":     blpop,
 	"subscribe": subscribe,
 	"publish":   publish,
+	"zadd":      zadd,
 }
 
 var pubSubCommands = map[string]func(splittedCommand []string, c net.Conn, master bool, bCount int) (bool, []byte){
@@ -514,6 +515,15 @@ func unsubscribe(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		parseStringToRESP(cmds[4]),
 		parseStringToRESPInt(strconv.Itoa(len(subscriptions[c])))}))
 }
+
+func zadd(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
+	if _, ok := sortedSets[cmds[4]]; !ok {
+		sortedSets[cmds[4]] = map[string]float64{}
+	}
+	sortedSets[cmds[4]][cmds[6]], _ = strconv.ParseFloat(cmds[8], 64)
+	return !m, []byte(parseStringToRESPInt(strconv.Itoa(len(sortedSets[cmds[4]]))))
+}
+
 func checkStreams(nStreams int, cmds []string, j int) (bool, []string) {
 	var found bool
 	var externalSlice []string

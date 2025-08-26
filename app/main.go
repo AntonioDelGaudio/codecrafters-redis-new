@@ -33,6 +33,7 @@ var dbfilename = flag.String("dbfilename", "", "The name of the file with the sn
 
 var entries = make(map[string][]Entry)
 var memory = make(map[string]Record)
+var sortedSets = make(map[string]map[string]float64)
 var channels = make(map[string]map[net.Conn]bool)
 var subscriptions = make(map[net.Conn]map[string]bool)
 var sent = false
