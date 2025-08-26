@@ -35,6 +35,7 @@ var commands = map[string]func(splittedCommand []string, c net.Conn, master bool
 	"lpop":      lpop,
 	"blpop":     blpop,
 	"subscribe": subscribe,
+	"publish":   publish,
 }
 
 var pubSubCommands = map[string]func(splittedCommand []string, c net.Conn, master bool, bCount int) (bool, []byte){
