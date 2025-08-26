@@ -30,18 +30,19 @@ func listBroker(w <-chan WriteReq, r <-chan ReadReq) {
 	for {
 		select {
 		case write := <-w:
-			lists[write.key] = append(lists[write.key], write.val)
 			if len(blopSubscribers[write.key]) > 0 {
 				sub := blopSubscribers[write.key][0]
 				blopSubscribers[write.key] = blopSubscribers[write.key][1:]
-				sub <- write.val
+				sub <- parseStringToRESP(write.val)
+			} else {
+				lists[write.key] = append(lists[write.key], write.val)
 			}
 		case read := <-r:
 			if read.block {
 				if len(lists[read.key]) > 0 {
 					popped := lists[read.key][0]
 					lists[read.key] = lists[read.key][1:]
-					read.c <- popped
+					read.c <- parseStringToRESP(popped)
 				} else {
 					blopSubscribers[read.key] = append(blopSubscribers[read.key], read.c)
 				}
@@ -54,7 +55,6 @@ func listBroker(w <-chan WriteReq, r <-chan ReadReq) {
 					read.c <- NULLBULK
 				}
 			}
-
 		}
 	}
 }
