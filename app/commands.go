@@ -450,7 +450,6 @@ func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		fmt.Println("Timed out")
 		return !m, []byte(NULLBULK)
 	}
-
 }
 
 func checkStreams(nStreams int, cmds []string, j int) (bool, []string) {
