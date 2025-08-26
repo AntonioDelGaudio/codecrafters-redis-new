@@ -40,7 +40,7 @@ var commands = map[string]func(splittedCommand []string, c net.Conn, master bool
 var pubSubCommands = map[string]func(splittedCommand []string, c net.Conn, master bool, bCount int) (bool, []byte){
 	"subscribe":    subscribe,
 	"ping":         sPing,
-	"publish":      nil,
+	"publish":      publish,
 	"unsubscribe":  nil,
 	"psubscribe":   nil,
 	"punsubscribe": nil,
@@ -481,6 +481,20 @@ func sPing(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		parseStringToRESP("pong"),
 		parseStringToRESP(""),
 	}))
+}
+
+func publish(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
+	if subs, ok := channels[cmds[4]]; ok {
+		for sub := range subs {
+			toConnection([]byte(parseRESPStringsToArray([]string{
+				parseStringToRESP("message"),
+				parseStringToRESP(cmds[4]),
+				parseStringToRESP(cmds[6]),
+			})), sub)
+		}
+		return !m, []byte(parseStringToRESPInt(strconv.Itoa(len(subs))))
+	}
+	return !m, []byte(parseStringToRESPInt("0"))
 }
 
 func checkStreams(nStreams int, cmds []string, j int) (bool, []string) {
