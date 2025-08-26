@@ -522,6 +522,7 @@ func zadd(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		sortedSets[cmds[4]] = map[string]float64{}
 	}
 	if _, ok := sortedSets[cmds[4]][cmds[8]]; !ok {
+		fmt.Println("New element in sorted set")
 		res = 1
 	}
 	sortedSets[cmds[4]][cmds[8]], _ = strconv.ParseFloat(cmds[6], 64)
