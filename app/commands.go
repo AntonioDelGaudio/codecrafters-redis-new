@@ -331,15 +331,13 @@ func xread(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 
 // lists implementation
 func rpush(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
-	fmt.Println("Called RPUSH")
-	var newVals []string
 	for i := 6; i < len(cmds); i += 2 {
-		newVals = append(newVals, cmds[i])
-	}
-	if val, found := lists[cmds[4]]; found {
-		lists[cmds[4]] = append(val, newVals...)
-	} else {
-		lists[cmds[4]] = newVals
+		wR := WriteReq{
+			key:  cmds[4],
+			left: false,
+			val:  cmds[i],
+		}
+		writeChan <- wR
 	}
 	return !m, []byte(parseStringToRESPInt(strconv.Itoa(len(lists[cmds[4]]))))
 }
@@ -376,14 +374,13 @@ func lrange(cmds []string, c net.Conn, m bool, count int) (bool, []byte) {
 }
 
 func lpush(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
-	var newVals []string
 	for i := 6; i < len(cmds); i += 2 {
-		newVals = append([]string{cmds[i]}, newVals...)
-	}
-	if val, found := lists[cmds[4]]; found {
-		lists[cmds[4]] = append(newVals, val...)
-	} else {
-		lists[cmds[4]] = newVals
+		wR := WriteReq{
+			key:  cmds[4],
+			left: true,
+			val:  cmds[i],
+		}
+		writeChan <- wR
 	}
 	return !m, []byte(parseStringToRESPInt(strconv.Itoa(len(lists[cmds[4]]))))
 }
