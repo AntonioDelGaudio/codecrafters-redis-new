@@ -392,7 +392,7 @@ func lpush(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		}
 		writeChan <- wR
 		endSize = <-lc
-
+		fmt.Println("End size now", endSize)
 	}
 	return !m, []byte(parseStringToRESPInt(strconv.Itoa(endSize)))
 }
