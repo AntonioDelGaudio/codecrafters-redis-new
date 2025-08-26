@@ -60,7 +60,7 @@ func parseFromRESP(reader *bufio.Reader) (res []string, count int) {
 	fmt.Println("Start:", string(start))
 	if string(start[0]) == "*" {
 		res = append(res, string(start))
-		count, _ := strconv.Atoi(string(start[1]))
+		count, _ := strconv.Atoi(string(start[:1]))
 		for i := 0; i < count*2; {
 			txt, _ := reader.ReadBytes(LF)
 			bCount += len(txt)
