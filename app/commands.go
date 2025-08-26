@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -433,8 +434,10 @@ func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	}()
 	select {
 	case popped := <-rR.c:
+		fmt.Println("Found value", popped)
 		return !m, []byte(popped)
 	case <-sleepC:
+		fmt.Println("Timed out")
 		return !m, []byte(NULLBULK)
 	}
 }
