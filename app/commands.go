@@ -556,6 +556,9 @@ func zrank(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	}
 	if entry, ok := sortedSets[key][member]; ok {
 		fmt.Println(sortedSets[key])
+		fmt.Println(entry)
+		fmt.Println(entry.score)
+		fmt.Println(entry.rank)
 		return !m, []byte(parseStringToRESPInt(strconv.Itoa(entry.rank)))
 	}
 	return !m, []byte(NULLBULK)
