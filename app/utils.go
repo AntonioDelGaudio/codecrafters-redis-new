@@ -26,6 +26,7 @@ func addToSortedSet(key string, member string, score float64) {
 		}
 		current.greater = &newEntry
 		sortedSetsStart[key] = &newEntry
+		return
 	}
 
 	for current.smaller != nil && current.score > score {
