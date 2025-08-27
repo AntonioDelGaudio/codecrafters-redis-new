@@ -37,6 +37,7 @@ var commands = map[string]func(splittedCommand []string, c net.Conn, master bool
 	"subscribe": subscribe,
 	"publish":   publish,
 	"zadd":      zadd,
+	"zrank":     zrank,
 }
 
 var pubSubCommands = map[string]func(splittedCommand []string, c net.Conn, master bool, bCount int) (bool, []byte){
@@ -517,111 +518,46 @@ func unsubscribe(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 }
 
 func zadd(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
-	res := 0
+	added := 0
+	key := cmds[4]
+	member := cmds[8]
 	score, err := strconv.ParseFloat(cmds[6], 64)
 	if err != nil {
 		return !m, []byte("-ERR value is not a valid float" + CRLF)
 	}
 	if _, ok := sortedSetsStart[cmds[4]]; !ok {
 		// base case, first element in the sorted set
-		sortedSets[cmds[4]] = map[string]*SortedSetEntry{cmds[8]: {
-			member: cmds[8],
+		sortedSets[key] = map[string]*SortedSetEntry{member: {
+			member: member,
 			score:  score,
 			prev:   nil,
 			next:   nil,
 			rank:   0,
 		},
 		}
-		sortedSetsStart[cmds[4]] = sortedSets[cmds[4]][cmds[8]]
-		res = 1 // new element added
-	} else if _, ok := sortedSets[cmds[4]][cmds[8]]; !ok {
+		sortedSetsStart[key] = sortedSets[key][member]
+		added++ // new element added
+	} else if _, ok := sortedSets[key][member]; !ok {
 		// new element in an existing sorted set
-		res = 1 // new element added
-		current := sortedSetsStart[cmds[4]]
-		for current.prev != nil && current.score > score {
-			current.rank++
-			current = current.prev
-		}
-		// insert, check if at the start or after current
-		var inserted *SortedSetEntry
-		if current.prev == nil {
-			current.prev = &SortedSetEntry{
-				member: cmds[8],
-				score:  score,
-				next:   current,
-				prev:   nil,
-				rank:   0,
-			}
-			sortedSetsStart[cmds[4]] = current.prev
-			inserted = current.prev
-		} else {
-			current.next.prev = &SortedSetEntry{
-				member: cmds[8],
-				score:  score,
-				next:   current.next,
-				prev:   current,
-				rank:   current.rank + 1,
-			}
-			current.next = current.next.prev
-			inserted = current.next
-		}
-		sortedSets[cmds[4]][cmds[8]] = inserted
+		added++ // new element added
+		addToSortedSet(key, member, score)
 	} else {
-		// element already in the set, update score and reposition if needed
-		existing := sortedSets[cmds[4]][cmds[8]]
-		if existing.score > score {
-			// move left in the list
-			existing.score = score
-
-		}
-		if existing.score < score {
-			// move right in the list
-			existing.score = score
-			for existing.next != nil && existing.score > existing.next.score {
-				// swap with next
-				if existing.prev != nil {
-					existing.prev.next = existing.next
-				} else {
-					sortedSetsStart[cmds[4]] = existing.next
-				}
-				existing.next.prev = existing.prev
-				existing.prev = existing.next
-				existing.next = existing.next.next
-				existing.prev.next = existing
-				if existing.next != nil {
-					existing.next.prev = existing
-				}
-				existing.rank++
-				if existing.prev != nil {
-					existing.prev.rank--
-				}
-			}
-		}
-		if existing.score > score {
-			// move left in the list
-			existing.score = score
-			for existing.prev != nil && existing.score < existing.prev.score {
-				// swap with prev
-				if existing.next != nil {
-					existing.next.prev = existing.prev
-				}
-				existing.prev.next = existing.next
-				existing.next = existing.prev
-				existing.prev = existing.prev.prev
-				existing.next.prev = existing
-				if existing.prev != nil {
-					existing.prev.next = existing
-				} else {
-					sortedSetsStart[cmds[4]] = existing
-				}
-				existing.rank--
-				if existing.next != nil {
-					existing.next.rank++
-				}
-			}
-		}
+		deleteFromSortedSet(key, member)
+		addToSortedSet(key, member, score)
 	}
-	return !m, []byte(parseStringToRESPInt(strconv.Itoa(res)))
+	return !m, []byte(parseStringToRESPInt(strconv.Itoa(added)))
+}
+
+func zrank(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
+	key := cmds[4]
+	member := cmds[6]
+	if _, ok := sortedSets[key]; !ok {
+		return !m, []byte(NULLBULK)
+	}
+	if entry, ok := sortedSets[key][member]; ok {
+		return !m, []byte(parseStringToRESPInt(strconv.Itoa(entry.rank)))
+	}
+	return !m, []byte(NULLBULK)
 }
 
 func checkStreams(nStreams int, cmds []string, j int) (bool, []string) {
