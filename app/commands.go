@@ -528,11 +528,11 @@ func zadd(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	if _, ok := sortedSetsStart[cmds[4]]; !ok {
 		// base case, first element in the sorted set
 		sortedSets[key] = map[string]*SortedSetEntry{member: {
-			member: member,
-			score:  score,
-			prev:   nil,
-			next:   nil,
-			rank:   0,
+			member:  member,
+			score:   score,
+			smaller: nil,
+			greater: nil,
+			rank:    0,
 		},
 		}
 		sortedSetsStart[key] = sortedSets[key][member]

@@ -27,11 +27,11 @@ type Entry struct {
 }
 
 type SortedSetEntry struct {
-	member string
-	score  float64
-	prev   *SortedSetEntry
-	next   *SortedSetEntry
-	rank   int
+	member  string
+	score   float64
+	smaller *SortedSetEntry
+	greater *SortedSetEntry
+	rank    int
 }
 
 var port = flag.String("port", "6379", "The port to listen on")
