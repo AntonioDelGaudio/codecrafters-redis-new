@@ -576,6 +576,7 @@ func zrange(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		return !m, []byte("-ERR value is not a valid integer" + CRLF)
 	}
 	res := []string{}
+	fmt.Println("Start: ", start, " End: ", end)
 	if elem, ok := sortedSetsStart[key]; ok {
 		if start < 0 {
 			start = elem.rank + start + 1
@@ -586,6 +587,7 @@ func zrange(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		if end < 0 {
 			end = elem.rank + end + 1
 		}
+		fmt.Println("Converted Start: ", start, " Converted End: ", end)
 		if start <= end && start <= elem.rank {
 			fmt.Println("Starting from: ", elem)
 			for elem.rank > end {
