@@ -33,6 +33,7 @@ func addToSortedSet(key string, member string, score float64) {
 			}
 		}
 		fmt.Println("Insert ", member, " at start")
+		fmt.Println(current)
 		newEntry := SortedSetEntry{
 			member:  member,
 			score:   score,
@@ -40,6 +41,7 @@ func addToSortedSet(key string, member string, score float64) {
 			greater: nil,
 			rank:    current.rank + 1,
 		}
+		fmt.Println(newEntry)
 		current.greater = &newEntry
 		sortedSetsStart[key] = &newEntry
 		sortedSets[key][member] = &newEntry
