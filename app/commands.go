@@ -38,6 +38,7 @@ var commands = map[string]func(splittedCommand []string, c net.Conn, master bool
 	"publish":   publish,
 	"zadd":      zadd,
 	"zrank":     zrank,
+	"zrange":    zrange,
 }
 
 var pubSubCommands = map[string]func(splittedCommand []string, c net.Conn, master bool, bCount int) (bool, []byte){
@@ -559,6 +560,31 @@ func zrank(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		return !m, []byte(parseStringToRESPInt(strconv.Itoa(entry.rank)))
 	}
 	return !m, []byte(NULLBULK)
+}
+
+func zrange(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
+	key := cmds[4]
+	start, err := strconv.Atoi(cmds[6])
+	if err != nil {
+		return !m, []byte("-ERR value is not a valid integer" + CRLF)
+	}
+	end, err := strconv.Atoi(cmds[8])
+	if err != nil {
+		return !m, []byte("-ERR value is not a valid integer" + CRLF)
+	}
+	res := []string{}
+	if elem, ok := sortedSetsStart[key]; ok {
+		if start < end && start < elem.rank {
+			for elem.rank > end {
+				elem = elem.smaller
+			}
+			for elem.rank >= start {
+				res = append(res, parseStringToRESP(elem.member))
+				elem = elem.smaller
+			}
+		}
+	}
+	return !m, []byte(parseRESPStringsToArray(res))
 }
 
 func checkStreams(nStreams int, cmds []string, j int) (bool, []string) {
