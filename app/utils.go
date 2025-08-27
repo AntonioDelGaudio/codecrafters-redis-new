@@ -128,6 +128,7 @@ func deleteFromSortedSet(key string, member string) {
 	}
 	if entry.greater == nil { // last element
 		entry.smaller.greater = nil
+		sortedSetsStart[key] = entry.smaller
 		delete(sortedSets[key], member)
 		return
 	}
