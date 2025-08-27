@@ -74,7 +74,7 @@ func addToSortedSet(key string, member string, score float64) {
 			score:   score,
 			smaller: current,
 			greater: current.greater,
-			rank:    current.rank,
+			rank:    current.rank + 1,
 		}
 		current.greater = &newEntry
 		sortedSets[key][member] = &newEntry
