@@ -576,9 +576,11 @@ func zrange(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	if elem, ok := sortedSetsStart[key]; ok {
 		if start < end && start < elem.rank {
 			for elem.rank > end {
+				fmt.Println("Skipping rank ", elem.rank)
 				elem = elem.smaller
 			}
 			for elem != nil && elem.rank >= start {
+				fmt.Println("Adding rank: ", elem.rank, " member: ", elem.member)
 				res = append([]string{parseStringToRESP(elem.member)}, res...)
 				elem = elem.smaller
 			}
