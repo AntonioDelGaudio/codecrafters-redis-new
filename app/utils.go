@@ -15,7 +15,23 @@ func addStringToInt(s string, i int) (string, error) {
 
 func addToSortedSet(key string, member string, score float64) {
 	current := sortedSetsStart[key]
-	if score > current.score { // insert at start
+	if score >= current.score { // insert at start
+		if score == current.score {
+			if member < current.member {
+				fmt.Println("Equal score, putting it after first because member smaller")
+				newEntry := SortedSetEntry{
+					member:  member,
+					score:   score,
+					smaller: current.smaller,
+					greater: current,
+					rank:    current.rank,
+				}
+				current.rank++
+				current.smaller = &newEntry
+				sortedSets[key][member] = &newEntry
+				return
+			}
+		}
 		fmt.Println("Insert ", member, " at start")
 		newEntry := SortedSetEntry{
 			member:  member,
@@ -37,7 +53,34 @@ func addToSortedSet(key string, member string, score float64) {
 	}
 	// insert, check if at the start or after current
 	var inserted *SortedSetEntry
-	if current.score >= score {
+	if score == current.score {
+		if member < current.member {
+			fmt.Println("Equal score, putting it before current because member smaller")
+			newEntry := SortedSetEntry{
+				member:  member,
+				score:   score,
+				smaller: current.smaller,
+				greater: current,
+				rank:    current.rank,
+			}
+			current.rank++
+			current.smaller = &newEntry
+			sortedSets[key][member] = &newEntry
+			return
+		}
+		fmt.Println("Equal score, putting it after current because member bigger")
+		newEntry := SortedSetEntry{
+			member:  member,
+			score:   score,
+			smaller: current,
+			greater: current.greater,
+			rank:    current.rank,
+		}
+		current.greater = &newEntry
+		sortedSets[key][member] = &newEntry
+		return
+	}
+	if current.score > score {
 		fmt.Println("Smaller rank inserting at the end before current")
 		fmt.Println("Current score:", current.score, " member:", current.member, " rank:", current.rank)
 		current.smaller = &SortedSetEntry{
