@@ -578,7 +578,7 @@ func zrange(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 			for elem.rank > end {
 				elem = elem.smaller
 			}
-			for elem.rank >= start {
+			for elem != nil && elem.rank >= start {
 				res = append(res, parseStringToRESP(elem.member))
 				elem = elem.smaller
 			}
