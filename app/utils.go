@@ -48,6 +48,7 @@ func addToSortedSet(key string, member string, score float64) {
 			rank:    0,
 		}
 		inserted = current.smaller
+		current.rank = 1
 	} else {
 		fmt.Println("Insert after current with rank:", current.rank+1)
 		fmt.Println("Current score:", current.score, " member:", current.member, " rank:", current.rank)
