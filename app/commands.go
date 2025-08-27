@@ -41,6 +41,7 @@ var commands = map[string]func(splittedCommand []string, c net.Conn, master bool
 	"zrange":    zrange,
 	"zcard":     zcard,
 	"zscore":    zscore,
+	"zrem":      zrem,
 }
 
 var pubSubCommands = map[string]func(splittedCommand []string, c net.Conn, master bool, bCount int) (bool, []byte){
@@ -618,6 +619,19 @@ func zscore(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		return !m, []byte(NULLBULK)
 	}
 	return !m, []byte(parseStringToRESP(strconv.FormatFloat(sortedSets[key][member].score, 'f', -1, 64)))
+}
+
+func zrem(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
+	key := cmds[4]
+	member := cmds[6]
+	if _, ok := sortedSets[key]; !ok {
+		return !m, []byte(parseStringToRESPInt("0"))
+	}
+	if _, ok := sortedSets[key][member]; !ok {
+		return !m, []byte(parseStringToRESPInt("0"))
+	}
+	deleteFromSortedSet(key, member)
+	return !m, []byte(parseStringToRESPInt("1"))
 }
 
 func checkStreams(nStreams int, cmds []string, j int) (bool, []string) {
