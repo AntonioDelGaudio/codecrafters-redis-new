@@ -587,6 +587,7 @@ func zrange(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 			end = elem.rank + end + 1
 		}
 		if start <= end && start < elem.rank {
+			fmt.Println("Evaluating for range: ", elem)
 			for elem.rank > end {
 				fmt.Println("Skipping rank ", elem.rank)
 				elem = elem.smaller
