@@ -518,14 +518,109 @@ func unsubscribe(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 
 func zadd(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	res := 0
-	if _, ok := sortedSets[cmds[4]]; !ok {
-		sortedSets[cmds[4]] = map[string]float64{}
+	score, err := strconv.ParseFloat(cmds[6], 64)
+	if err != nil {
+		return !m, []byte("-ERR value is not a valid float" + CRLF)
 	}
-	if _, ok := sortedSets[cmds[4]][cmds[8]]; !ok {
-		fmt.Println("New element in sorted set")
-		res = 1
+	if _, ok := sortedSetsStart[cmds[4]]; !ok {
+		// base case, first element in the sorted set
+		sortedSets[cmds[4]] = map[string]*SortedSetEntry{cmds[8]: {
+			member: cmds[8],
+			score:  score,
+			prev:   nil,
+			next:   nil,
+			rank:   0,
+		},
+		}
+		sortedSetsStart[cmds[4]] = sortedSets[cmds[4]][cmds[8]]
+		res = 1 // new element added
+	} else if _, ok := sortedSets[cmds[4]][cmds[8]]; !ok {
+		// new element in an existing sorted set
+		res = 1 // new element added
+		current := sortedSetsStart[cmds[4]]
+		for current.prev != nil && current.score > score {
+			current.rank++
+			current = current.prev
+		}
+		// insert, check if at the start or after current
+		var inserted *SortedSetEntry
+		if current.prev == nil {
+			current.prev = &SortedSetEntry{
+				member: cmds[8],
+				score:  score,
+				next:   current,
+				prev:   nil,
+				rank:   0,
+			}
+			sortedSetsStart[cmds[4]] = current.prev
+			inserted = current.prev
+		} else {
+			current.next.prev = &SortedSetEntry{
+				member: cmds[8],
+				score:  score,
+				next:   current.next,
+				prev:   current,
+				rank:   current.rank + 1,
+			}
+			current.next = current.next.prev
+			inserted = current.next
+		}
+		sortedSets[cmds[4]][cmds[8]] = inserted
+	} else {
+		// element already in the set, update score and reposition if needed
+		existing := sortedSets[cmds[4]][cmds[8]]
+		if existing.score > score {
+			// move left in the list
+			existing.score = score
+
+		}
+		if existing.score < score {
+			// move right in the list
+			existing.score = score
+			for existing.next != nil && existing.score > existing.next.score {
+				// swap with next
+				if existing.prev != nil {
+					existing.prev.next = existing.next
+				} else {
+					sortedSetsStart[cmds[4]] = existing.next
+				}
+				existing.next.prev = existing.prev
+				existing.prev = existing.next
+				existing.next = existing.next.next
+				existing.prev.next = existing
+				if existing.next != nil {
+					existing.next.prev = existing
+				}
+				existing.rank++
+				if existing.prev != nil {
+					existing.prev.rank--
+				}
+			}
+		}
+		if existing.score > score {
+			// move left in the list
+			existing.score = score
+			for existing.prev != nil && existing.score < existing.prev.score {
+				// swap with prev
+				if existing.next != nil {
+					existing.next.prev = existing.prev
+				}
+				existing.prev.next = existing.next
+				existing.next = existing.prev
+				existing.prev = existing.prev.prev
+				existing.next.prev = existing
+				if existing.prev != nil {
+					existing.prev.next = existing
+				} else {
+					sortedSetsStart[cmds[4]] = existing
+				}
+				existing.rank--
+				if existing.next != nil {
+					existing.next.rank++
+				}
+			}
+		}
 	}
-	sortedSets[cmds[4]][cmds[8]], _ = strconv.ParseFloat(cmds[6], 64)
 	return !m, []byte(parseStringToRESPInt(strconv.Itoa(res)))
 }
 

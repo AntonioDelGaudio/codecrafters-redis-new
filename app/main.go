@@ -26,6 +26,14 @@ type Entry struct {
 	values map[string]string
 }
 
+type SortedSetEntry struct {
+	member string
+	score  float64
+	prev   *SortedSetEntry
+	next   *SortedSetEntry
+	rank   int
+}
+
 var port = flag.String("port", "6379", "The port to listen on")
 var replicaof = flag.String("replicaof", "", "The replica of this server")
 var dir = flag.String("dir", "", "The directory in which the data will be saved for recovery")
@@ -33,7 +41,8 @@ var dbfilename = flag.String("dbfilename", "", "The name of the file with the sn
 
 var entries = make(map[string][]Entry)
 var memory = make(map[string]Record)
-var sortedSets = make(map[string]map[string]float64)
+var sortedSetsStart = make(map[string]*SortedSetEntry)
+var sortedSets = make(map[string]map[string]*SortedSetEntry)
 var channels = make(map[string]map[net.Conn]bool)
 var subscriptions = make(map[net.Conn]map[string]bool)
 var sent = false
