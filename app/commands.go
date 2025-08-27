@@ -574,6 +574,15 @@ func zrange(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	}
 	res := []string{}
 	if elem, ok := sortedSetsStart[key]; ok {
+		if start < 0 {
+			start = elem.rank + start + 1
+			if start < 0 {
+				start = 0
+			}
+		}
+		if end < 0 {
+			end = elem.rank + end + 1
+		}
 		if start < end && start < elem.rank {
 			for elem.rank > end {
 				fmt.Println("Skipping rank ", elem.rank)
