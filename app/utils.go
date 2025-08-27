@@ -15,7 +15,7 @@ func addStringToInt(s string, i int) (string, error) {
 
 func addToSortedSet(key string, member string, score float64) {
 	current := sortedSetsStart[key]
-	if score >= current.score { // insert at start
+	if score > current.score { // insert at start
 		fmt.Println("Insert ", member, " at start")
 		newEntry := SortedSetEntry{
 			member:  member,
