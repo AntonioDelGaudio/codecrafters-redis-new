@@ -31,13 +31,12 @@ func addToSortedSet(key string, member string, score float64) {
 
 	for current.smaller != nil && current.score > score {
 		// moving down the list
-		fmt.Println("From prev score:", current.score, " member:", current.member, " rank:", current.rank)
 		current.rank++
 		current = current.smaller
 	}
 	// insert, check if at the start or after current
 	var inserted *SortedSetEntry
-	if current.smaller == nil {
+	if current.score > score {
 		fmt.Println("Smaller rank inserting at the end before current")
 		fmt.Println("Current score:", current.score, " member:", current.member, " rank:", current.rank)
 		current.smaller = &SortedSetEntry{
