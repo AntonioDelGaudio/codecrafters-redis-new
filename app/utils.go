@@ -141,6 +141,7 @@ func deleteFromSortedSet(key string, member string) {
 	for current != nil {
 		current.rank--
 		current = current.greater
+		fmt.Println("Lowering ", current.member, "to rank: ", current.rank)
 	}
 	delete(sortedSets[key], member)
 }
