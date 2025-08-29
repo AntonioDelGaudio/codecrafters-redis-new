@@ -45,7 +45,6 @@ func addToSortedSet(key string, member string, score float64) {
 		sortedSetsStart[key] = sortedSets[key][member]
 		return
 	}
-	sortedSetsStart[key] = sortedSets[key][member]
 	current := sortedSetsStart[key]
 	fmt.Println("Comparing: ", score, " >= ", current)
 	if score >= current.score { // insert at start
