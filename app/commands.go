@@ -349,8 +349,7 @@ func xread(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		return !m, []byte(parseRESPStringsToArray(externalSlice))
 	}
 	handleOffset(count)
-	fmt.Println("Am i here?")
-	return !m, []byte(NULLBULK)
+	return !m, []byte(parseRESPStringsToArray([]string{}))
 }
 
 // lists implementation
