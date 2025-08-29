@@ -132,6 +132,7 @@ func deleteFromSortedSet(key string, member string) {
 	if entry.greater == nil { // last element
 		entry.smaller.greater = nil
 		sortedSetsStart[key] = entry.smaller
+		fmt.Println("Change current start to ", sortedSetsStart[key].member)
 		delete(sortedSets[key], member)
 		return
 	}
