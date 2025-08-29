@@ -18,7 +18,7 @@ func addToSortedSet(key string, member string, score float64) {
 	if score >= current.score { // insert at start
 		if score == current.score {
 			if member < current.member {
-				fmt.Println("Equal score, putting it after first because member smaller")
+				fmt.Println("Equal score, putting it after left because member smaller")
 				newEntry := SortedSetEntry{
 					member:  member,
 					score:   score,
@@ -32,7 +32,7 @@ func addToSortedSet(key string, member string, score float64) {
 				return
 			}
 		}
-		fmt.Println("Insert ", member, " at start")
+		fmt.Println("Insert ", member, " at start right of ", current)
 		newEntry := SortedSetEntry{
 			member:  member,
 			score:   score,
@@ -55,7 +55,7 @@ func addToSortedSet(key string, member string, score float64) {
 	var inserted *SortedSetEntry
 	if score == current.score {
 		if member < current.member {
-			fmt.Println("Equal score, putting it before current because member smaller")
+			fmt.Println("Equal score, putting it left current because member smaller")
 			newEntry := SortedSetEntry{
 				member:  member,
 				score:   score,
@@ -68,7 +68,7 @@ func addToSortedSet(key string, member string, score float64) {
 			sortedSets[key][member] = &newEntry
 			return
 		}
-		fmt.Println("Equal score, putting it after current because member bigger")
+		fmt.Println("Equal score, putting it right current because member bigger")
 		newEntry := SortedSetEntry{
 			member:  member,
 			score:   score,
