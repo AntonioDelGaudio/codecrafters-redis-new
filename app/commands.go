@@ -349,7 +349,7 @@ func xread(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		return !m, []byte(parseRESPStringsToArray(externalSlice))
 	}
 	handleOffset(count)
-	return !m, []byte("*-1\r\n")
+	return !m, []byte(NULLARRAY)
 }
 
 // lists implementation
@@ -479,7 +479,7 @@ func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	case <-timeoutChan:
 		fmt.Println("Timeout reached, returning nil")
 		handleOffset(bCount)
-		return !m, []byte(NULLBULK)
+		return !m, []byte(NULLARRAY)
 	}
 }
 
