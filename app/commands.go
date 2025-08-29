@@ -691,10 +691,18 @@ func geoadd(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 			handleOffset(bCount)
 			return !m, []byte("-ERR longitude value is not a valid float" + CRLF)
 		}
+		if longitude < -180 || longitude > 180 {
+			handleOffset(bCount)
+			return !m, []byte("-ERR longitude value is out of range" + CRLF)
+		}
 		latitude, err := strconv.ParseFloat(cmds[i+2], 64)
 		if err != nil {
 			handleOffset(bCount)
 			return !m, []byte("-ERR latitude value is not a valid float" + CRLF)
+		}
+		if latitude < -85.05112878 || latitude > 85.05112878 {
+			handleOffset(bCount)
+			return !m, []byte("-ERR latitude value is out of range" + CRLF)
 		}
 		member := cmds[i+4]
 		if _, ok := geoSets[key]; !ok {
