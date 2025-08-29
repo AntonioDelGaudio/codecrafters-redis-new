@@ -545,7 +545,6 @@ func unsubscribe(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 }
 
 func zadd(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
-	added := 0
 	key := cmds[4]
 	member := cmds[8]
 	score, err := strconv.ParseFloat(cmds[6], 64)
@@ -553,27 +552,7 @@ func zadd(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		handleOffset(bCount)
 		return !m, []byte("-ERR value is not a valid float" + CRLF)
 	}
-	if _, ok := sortedSetsStart[cmds[4]]; !ok {
-		// base case, first element in the sorted set
-		fmt.Println("Creating a new SortedSet")
-		sortedSets[key] = map[string]*SortedSetEntry{member: {
-			member:  member,
-			score:   score,
-			smaller: nil,
-			greater: nil,
-			rank:    0,
-		},
-		}
-		sortedSetsStart[key] = sortedSets[key][member]
-		added++ // new element added
-	} else if _, ok := sortedSets[key][member]; !ok {
-		// new element in an existing sorted set
-		added++ // new element added
-		addToSortedSet(key, member, score)
-	} else {
-		deleteFromSortedSet(key, member)
-		addToSortedSet(key, member, score)
-	}
+	added := updateSortedSet(key, member, score)
 	handleOffset(bCount)
 	return !m, []byte(parseStringToRESPInt(strconv.Itoa(added)))
 }
@@ -713,8 +692,9 @@ func geoadd(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 			latitude:  latitude,
 			member:    member,
 		})
-		added++
+		added += updateSortedSet(key, member, 0)
 	}
+
 	handleOffset(bCount)
 	return !m, []byte(parseStringToRESPInt(strconv.Itoa(added)))
 }

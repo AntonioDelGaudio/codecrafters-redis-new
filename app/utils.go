@@ -13,7 +13,38 @@ func addStringToInt(s string, i int) (string, error) {
 	return strconv.Itoa(number + i), nil
 }
 
+func updateSortedSet(key string, member string, score float64) int {
+	if _, ok := sortedSetsStart[key]; !ok {
+		// first element in the sorted set
+		addToSortedSet(key, member, score)
+		return 1 // new element added
+	} else if _, ok := sortedSets[key][member]; !ok {
+		// new element in an existing sorted set
+		// new element added
+		addToSortedSet(key, member, score)
+		return 1
+	} else {
+		// existing element, delete from set and insert with new score
+		deleteFromSortedSet(key, member)
+		addToSortedSet(key, member, score)
+		return 0
+	}
+}
+
 func addToSortedSet(key string, member string, score float64) {
+	if _, exists := sortedSets[key]; !exists {
+		fmt.Println("Creating a new SortedSet")
+		sortedSets[key] = map[string]*SortedSetEntry{member: {
+			member:  member,
+			score:   score,
+			smaller: nil,
+			greater: nil,
+			rank:    0,
+		},
+		}
+		return
+	}
+	sortedSetsStart[key] = sortedSets[key][member]
 	current := sortedSetsStart[key]
 	fmt.Println("Comparing: ", score, " >= ", current)
 	if score >= current.score { // insert at start
