@@ -357,7 +357,9 @@ func rpush(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	lc := make(chan int)
 	endSize := 0
 	fmt.Println("RPUSH called with", cmds)
+	fmt.Println("Len cmds: ", len(cmds))
 	for i := 6; i < len(cmds); i += 2 {
+		fmt.Println("Handling :", cmds[i])
 		wR := WriteReq{
 			key:  cmds[4],
 			left: false,
