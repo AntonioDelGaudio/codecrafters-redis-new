@@ -42,6 +42,7 @@ var commands = map[string]func(splittedCommand []string, c net.Conn, master bool
 	"zcard":     zcard,
 	"zscore":    zscore,
 	"zrem":      zrem,
+	"geoadd":    geoadd,
 }
 
 var pubSubCommands = map[string]func(splittedCommand []string, c net.Conn, master bool, bCount int) (bool, []byte){
@@ -296,6 +297,7 @@ func xadd(cmds []string, c net.Conn, m bool, count int) (bool, []byte) {
 	}
 
 	entries[cmds[4]] = append(entries[cmds[4]], newEntry)
+	handleOffset(count)
 	return !m, []byte(parseStringToRESP(id))
 }
 
@@ -310,6 +312,7 @@ func xrange(cmds []string, c net.Conn, m bool, count int) (bool, []byte) {
 		endSplitted = append(endSplitted, "999999")
 	}
 	res := filterEntries(entries[key], startSplitted, endSplitted, isInRange)
+	handleOffset(count)
 	return !m, []byte(parseRESPStringsToArray(res))
 }
 
@@ -333,6 +336,7 @@ func xread(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 			for {
 				found, externalSlice := checkStreams(nStreams, cmds, j)
 				if found {
+					handleOffset(count)
 					return !m, []byte(parseRESPStringsToArray(externalSlice))
 				}
 				time.Sleep(time.Duration(1000) * time.Millisecond)
@@ -341,8 +345,10 @@ func xread(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	}
 	found, externalSlice := checkStreams(nStreams, cmds, j)
 	if found {
+		handleOffset(count)
 		return !m, []byte(parseRESPStringsToArray(externalSlice))
 	}
+	handleOffset(count)
 	return !m, []byte(NULLBULK)
 }
 
@@ -363,6 +369,7 @@ func rpush(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		fmt.Println("End size now", endSize)
 	}
 	fmt.Println("Returning from RPUSH, with size", endSize)
+	handleOffset(bCount)
 	return !m, []byte(parseStringToRESPInt(strconv.Itoa(endSize)))
 }
 
@@ -386,6 +393,7 @@ func lrange(cmds []string, c net.Conn, m bool, count int) (bool, []byte) {
 			end = len(val) - 1
 		}
 		if start > end || start >= len(val) {
+			handleOffset(count)
 			return !m, []byte(parseRESPStringsToArray([]string{}))
 		}
 		var res []string
@@ -394,6 +402,7 @@ func lrange(cmds []string, c net.Conn, m bool, count int) (bool, []byte) {
 		}
 		return !m, []byte(parseRESPStringsToArray(res))
 	}
+	handleOffset(count)
 	return !m, []byte(parseRESPStringsToArray([]string{}))
 }
 
@@ -411,13 +420,16 @@ func lpush(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		endSize = <-lc
 		fmt.Println("End size now", endSize)
 	}
+	handleOffset(bCount)
 	return !m, []byte(parseStringToRESPInt(strconv.Itoa(endSize)))
 }
 
 func llen(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	if val, found := lists[cmds[4]]; found {
+		handleOffset(bCount)
 		return !m, []byte(parseStringToRESPInt(strconv.Itoa(len(val))))
 	}
+	handleOffset(bCount)
 	return !m, []byte(parseStringToRESPInt("0"))
 }
 
@@ -436,10 +448,12 @@ func lpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 			popped := <-ch
 			res = append(res, popped)
 		}
+		handleOffset(bCount)
 		return !m, []byte(parseRESPStringsToArray(res))
 	}
 	readChan <- rR
 	popped := <-ch
+	handleOffset(bCount)
 	return !m, []byte(popped)
 }
 
@@ -460,9 +474,11 @@ func blpop(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	select {
 	case popped := <-rR.c:
 		res := parseRESPStringsToArray([]string{parseStringToRESP(rR.key), popped})
+		handleOffset(bCount)
 		return !m, []byte(res)
 	case <-timeoutChan:
 		fmt.Println("Timeout reached, returning nil")
+		handleOffset(bCount)
 		return !m, []byte(NULLBULK)
 	}
 }
@@ -478,12 +494,14 @@ func subscribe(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	}
 	channels[cmds[4]][c] = true
 	subscriptions[c][cmds[4]] = true
+	handleOffset(bCount)
 	return !m, []byte(parseRESPStringsToArray([]string{parseStringToRESP("subscribe"),
 		parseStringToRESP(cmds[4]),
 		parseStringToRESPInt(strconv.Itoa(len(subscriptions[c])))}))
 }
 
 func sPing(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
+	handleOffset(bCount)
 	return !m, []byte(parseRESPStringsToArray([]string{
 		parseStringToRESP("pong"),
 		parseStringToRESP(""),
@@ -499,8 +517,10 @@ func publish(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 				parseStringToRESP(cmds[6]),
 			})), sub)
 		}
+		handleOffset(bCount)
 		return !m, []byte(parseStringToRESPInt(strconv.Itoa(len(subs))))
 	}
+	handleOffset(bCount)
 	return !m, []byte(parseStringToRESPInt("0"))
 }
 
@@ -516,6 +536,7 @@ func unsubscribe(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	if _, ok := subscriptions[c][cmds[4]]; ok {
 		delete(subscriptions[c], cmds[4])
 	}
+	handleOffset(bCount)
 	return !m, []byte(parseRESPStringsToArray([]string{parseStringToRESP("unsubscribe"),
 		parseStringToRESP(cmds[4]),
 		parseStringToRESPInt(strconv.Itoa(len(subscriptions[c])))}))
@@ -527,6 +548,7 @@ func zadd(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	member := cmds[8]
 	score, err := strconv.ParseFloat(cmds[6], 64)
 	if err != nil {
+		handleOffset(bCount)
 		return !m, []byte("-ERR value is not a valid float" + CRLF)
 	}
 	if _, ok := sortedSetsStart[cmds[4]]; !ok {
@@ -550,6 +572,7 @@ func zadd(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		deleteFromSortedSet(key, member)
 		addToSortedSet(key, member, score)
 	}
+	handleOffset(bCount)
 	return !m, []byte(parseStringToRESPInt(strconv.Itoa(added)))
 }
 
@@ -557,11 +580,14 @@ func zrank(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	key := cmds[4]
 	member := cmds[6]
 	if _, ok := sortedSets[key]; !ok {
+		handleOffset(bCount)
 		return !m, []byte(NULLBULK)
 	}
 	if entry, ok := sortedSets[key][member]; ok {
+		handleOffset(bCount)
 		return !m, []byte(parseStringToRESPInt(strconv.Itoa(entry.rank)))
 	}
+	handleOffset(bCount)
 	return !m, []byte(NULLBULK)
 }
 
@@ -569,10 +595,12 @@ func zrange(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	key := cmds[4]
 	start, err := strconv.Atoi(cmds[6])
 	if err != nil {
+		handleOffset(bCount)
 		return !m, []byte("-ERR value is not a valid integer" + CRLF)
 	}
 	end, err := strconv.Atoi(cmds[8])
 	if err != nil {
+		handleOffset(bCount)
 		return !m, []byte("-ERR value is not a valid integer" + CRLF)
 	}
 	res := []string{}
@@ -601,14 +629,17 @@ func zrange(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 			}
 		}
 	}
+	handleOffset(bCount)
 	return !m, []byte(parseRESPStringsToArray(res))
 }
 
 func zcard(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	key := cmds[4]
 	if sortedSetsStart[key] == nil {
+		handleOffset(bCount)
 		return !m, []byte(parseStringToRESPInt("0"))
 	}
+	handleOffset(bCount)
 	return !m, []byte(parseStringToRESPInt(strconv.Itoa(sortedSetsStart[key].rank + 1)))
 }
 
@@ -616,11 +647,14 @@ func zscore(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	key := cmds[4]
 	member := cmds[6]
 	if _, ok := sortedSets[key]; !ok {
+		handleOffset(bCount)
 		return !m, []byte(NULLBULK)
 	}
 	if _, ok := sortedSets[key][member]; !ok {
+		handleOffset(bCount)
 		return !m, []byte(NULLBULK)
 	}
+	handleOffset(bCount)
 	return !m, []byte(parseStringToRESP(strconv.FormatFloat(sortedSets[key][member].score, 'f', -1, 64)))
 }
 
@@ -628,13 +662,47 @@ func zrem(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	key := cmds[4]
 	member := cmds[6]
 	if _, ok := sortedSets[key]; !ok {
+		handleOffset(bCount)
 		return !m, []byte(parseStringToRESPInt("0"))
 	}
 	if _, ok := sortedSets[key][member]; !ok {
+		handleOffset(bCount)
 		return !m, []byte(parseStringToRESPInt("0"))
 	}
 	deleteFromSortedSet(key, member)
+	handleOffset(bCount)
 	return !m, []byte(parseStringToRESPInt("1"))
+}
+
+// geoadd implementation
+
+func geoadd(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
+	key := cmds[4]
+	added := 0
+	for i := 6; i < len(cmds); i = i + 6 {
+		longitude, err := strconv.ParseFloat(cmds[i], 64)
+		if err != nil {
+			handleOffset(bCount)
+			return !m, []byte("-ERR longitude value is not a valid float" + CRLF)
+		}
+		latitude, err := strconv.ParseFloat(cmds[i+2], 64)
+		if err != nil {
+			handleOffset(bCount)
+			return !m, []byte("-ERR latitude value is not a valid float" + CRLF)
+		}
+		member := cmds[i+4]
+		if _, ok := geoSets[key]; !ok {
+			geoSets[key] = []GeoEntry{}
+		}
+		geoSets[key] = append(geoSets[key], GeoEntry{
+			longitude: longitude,
+			latitude:  latitude,
+			member:    member,
+		})
+		added++
+	}
+	handleOffset(bCount)
+	return !m, []byte(parseStringToRESPInt(strconv.Itoa(added)))
 }
 
 func checkStreams(nStreams int, cmds []string, j int) (bool, []string) {

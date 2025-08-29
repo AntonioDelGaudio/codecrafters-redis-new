@@ -34,6 +34,12 @@ type SortedSetEntry struct {
 	rank    int
 }
 
+type GeoEntry struct {
+	longitude float64
+	latitude  float64
+	member    string
+}
+
 var port = flag.String("port", "6379", "The port to listen on")
 var replicaof = flag.String("replicaof", "", "The replica of this server")
 var dir = flag.String("dir", "", "The directory in which the data will be saved for recovery")
@@ -43,6 +49,7 @@ var entries = make(map[string][]Entry)
 var memory = make(map[string]Record)
 var sortedSetsStart = make(map[string]*SortedSetEntry)
 var sortedSets = make(map[string]map[string]*SortedSetEntry)
+var geoSets = make(map[string][]GeoEntry)
 var channels = make(map[string]map[net.Conn]bool)
 var subscriptions = make(map[net.Conn]map[string]bool)
 var sent = false
