@@ -42,6 +42,7 @@ func addToSortedSet(key string, member string, score float64) {
 			rank:    0,
 		},
 		}
+		sortedSetsStart[key] = sortedSets[key][member]
 		return
 	}
 	sortedSetsStart[key] = sortedSets[key][member]
