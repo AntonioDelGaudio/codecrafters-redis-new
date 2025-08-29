@@ -606,6 +606,7 @@ func zrange(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 	res := []string{}
 	fmt.Println("Start: ", start, " End: ", end)
 	if elem, ok := sortedSetsStart[key]; ok {
+		fmt.Println("Biggest element: ", elem)
 		if start < 0 {
 			start = elem.rank + start + 1
 			if start < 0 {
@@ -670,6 +671,9 @@ func zrem(cmds []string, c net.Conn, m bool, bCount int) (bool, []byte) {
 		return !m, []byte(parseStringToRESPInt("0"))
 	}
 	deleteFromSortedSet(key, member)
+	for member := range sortedSets[key] {
+		fmt.Println("Remaining member:", member, " :", sortedSets[key][member])
+	}
 	handleOffset(bCount)
 	return !m, []byte(parseStringToRESPInt("1"))
 }
