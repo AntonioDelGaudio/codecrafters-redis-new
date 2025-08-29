@@ -48,6 +48,7 @@ func addToSortedSet(key string, member string, score float64) {
 
 	for current.smaller != nil && current.score > score {
 		// moving down the list
+		fmt.Println("Updating rank of ", current.member, " to ", current.rank+1)
 		current.rank++
 		current = current.smaller
 	}
